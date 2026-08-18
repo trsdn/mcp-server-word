@@ -1,0 +1,27 @@
+<Project>
+  <!-- Central Package Management for consistent versions across the solution -->
+  <PropertyGroup>
+    <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+    <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
+  </PropertyGroup>
+  <ItemGroup>
+    <!-- Word COM Interop PIA -->
+    <PackageVersion Include="Microsoft.Office.Interop.Word" Version="15.0.4797.1004" />
+    <!-- Microsoft Extensions for MCP Server -->
+    <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.4" />
+    <!-- Pinned to 10.0.3 because ModelContextProtocol 0.9.0-preview.2 requires it -->
+    <PackageVersion Include="Microsoft.Extensions.Logging.Abstractions" Version="10.0.3" />
+    <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.4" />
+    <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
+    <!-- MCP SDK -->
+    <PackageVersion Include="ModelContextProtocol" Version="0.9.0-preview.2" />
+    <!-- Testing Framework -->
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="17.12.0" />
+    <PackageVersion Include="xunit" Version="2.9.3" />
+    <PackageVersion Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageVersion Include="coverlet.collector" Version="6.1.0" />
+    <!-- Code Analysis -->
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="9.0.0" />
+  </ItemGroup>
+</Project>
