@@ -17,6 +17,21 @@ public sealed partial class OleMessageFilter : IOleMessageFilter
 {
     private static readonly StrategyBasedComWrappers s_comWrappers = new();
 
+    /// <summary>Maximum time a single COM call is retried while Word reports itself busy.</summary>
+    private const int RetryTimeoutMs = 30_000;
+
+    /// <summary>
+    /// Idle time after which the next rejection is treated as a new call rather than a
+    /// continuation of the previous retry sequence.
+    /// </summary>
+    private const int RetrySequenceResetMs = 2_000;
+
+    [ThreadStatic]
+    private static long _retrySequenceStart;
+
+    [ThreadStatic]
+    private static long _lastRetryTick;
+
     [ThreadStatic]
     private static nint _oldFilterPtr;
 
@@ -78,22 +93,39 @@ public sealed partial class OleMessageFilter : IOleMessageFilter
     /// Handles rejected COM calls with exponential backoff while Word is busy.
     /// </summary>
     /// <returns>Milliseconds to wait before retrying, or -1 to cancel the call.</returns>
+    /// <remarks>
+    /// Word rejects calls with <c>SERVERCALL_REJECTED</c> for several seconds after startup,
+    /// so both rejection kinds have to be retried. <c>dwTickCount</c> is only meaningful for
+    /// <c>SERVERCALL_RETRYLATER</c>, so the retry deadline is tracked per thread instead.
+    /// </remarks>
     int IOleMessageFilter.RetryRejectedCall(nint htaskCallee, int dwTickCount, int dwRejectType)
     {
+        const int ServerCallRejected = 1;
         const int ServerCallRetryLater = 2;
-        const int RetryTimeoutMs = 30000;
 
-        if (dwRejectType != ServerCallRetryLater)
+        if (dwRejectType is not (ServerCallRejected or ServerCallRetryLater))
         {
             return -1; // Cancel immediately for non-retryable rejections
         }
 
-        if (dwTickCount >= RetryTimeoutMs)
+        long now = Environment.TickCount64;
+
+        // A gap longer than the reset window means this is a new call, not a continued retry.
+        if (_retrySequenceStart == 0 || now - _lastRetryTick > RetrySequenceResetMs)
         {
-            return -1; // Give up after 30 seconds
+            _retrySequenceStart = now;
         }
 
-        return dwTickCount switch
+        _lastRetryTick = now;
+        long elapsed = now - _retrySequenceStart;
+
+        if (elapsed >= RetryTimeoutMs)
+        {
+            _retrySequenceStart = 0;
+            return -1; // Give up
+        }
+
+        return elapsed switch
         {
             < 1000 => 100,
             < 5000 => 200,

@@ -295,6 +295,8 @@ internal sealed class WordBatch : IWordBatch
         var app = (Word.Application)Activator.CreateInstance(wordType)!;
 #pragma warning restore IL2072
 
+        WaitUntilResponsive(app);
+
         // Unlike PowerPoint, Word allows hiding the application window entirely.
         ((dynamic)app).Visible = _visible;
         ((dynamic)app).DisplayAlerts = ComInteropConstants.WdAlertsNone;
@@ -325,6 +327,45 @@ internal sealed class WordBatch : IWordBatch
         CaptureWordProcessId(app);
     }
 
+    /// <summary>
+    /// Blocks until a freshly started Word answers a trivial call without rejecting it.
+    /// </summary>
+    /// <remarks>
+    /// Word rejects COM calls for several seconds after activation. Issuing document work during
+    /// that window makes each call wait on the OLE message filter, and the resulting delay lets
+    /// Word's AutoSave claim a new document for OneDrive before it can be saved locally — the
+    /// document then lives in the cloud and every later local save fails or blocks on a dialog.
+    /// Warming Word up first keeps <see cref="CreateDocument"/> fast enough to win that race.
+    /// </remarks>
+    private static void WaitUntilResponsive(Word.Application app)
+    {
+        var deadline = DateTime.UtcNow + ComInteropConstants.StartupTimeout;
+        Exception? last = null;
+
+        while (DateTime.UtcNow < deadline)
+        {
+            try
+            {
+                _ = (int)((dynamic)app).Documents.Count;
+                return;
+            }
+            catch (COMException ex)
+            {
+                last = ex;
+                Thread.Sleep(ComInteropConstants.WarmupPollInterval);
+            }
+            catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException ex)
+            {
+                last = ex;
+                Thread.Sleep(ComInteropConstants.WarmupPollInterval);
+            }
+        }
+
+        throw new TimeoutException(
+            $"Word did not become responsive within {ComInteropConstants.StartupTimeout.TotalSeconds:N0}s.",
+            last);
+    }
+
     private Word.Document CreateDocument(Word.Application app, string normalizedPath)
     {
         string? directory = Path.GetDirectoryName(normalizedPath);
@@ -334,14 +375,32 @@ internal sealed class WordBatch : IWordBatch
                 $"Directory does not exist: '{directory}'. Create it before creating Word documents.");
         }
 
-        var doc = ((dynamic)app).Documents.Add();
+        EmptyDocumentFactory.Create(normalizedPath, _isMacroEnabled);
 
-        int format = _isMacroEnabled
-            ? ComInteropConstants.WdFormatXmlDocumentMacroEnabled
-            : ComInteropConstants.WdFormatXmlDocument;
+        Word.Document doc = OpenDocument(app, normalizedPath);
 
-        ((dynamic)doc).SaveAs2(normalizedPath, format);
-        return (Word.Document)doc;
+        // Our hand-written package contains no styles, whereas a document created through Word
+        // inherits the built-in ones from Normal.dotm. Copy them in so callers can use names like
+        // "Heading 1" or "Table Grid".
+        CopyBuiltInStyles(app, doc);
+
+        return doc;
+    }
+
+    private static void CopyBuiltInStyles(Word.Application app, Word.Document doc)
+    {
+        try
+        {
+            string template = (string)((dynamic)app).NormalTemplate.FullName;
+            ((dynamic)doc).CopyStylesFromTemplate(template);
+        }
+        catch (COMException)
+        {
+            // A document without the built-in styles is still usable; only named styles fail.
+        }
+        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
+        {
+        }
     }
 
     private static Word.Document OpenDocument(Word.Application app, string normalizedPath)

@@ -10,7 +10,7 @@
     <IsTestProject>true</IsTestProject>
 
     <!-- Test methods do not need XML documentation -->
-    <NoWarn>$(NoWarn);CS1591;CA1707;CA5394</NoWarn>
+    <NoWarn>$(NoWarn);CS1591;CA1707;CA5394;CA1711</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>

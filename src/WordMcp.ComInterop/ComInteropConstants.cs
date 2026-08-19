@@ -29,6 +29,11 @@ public static class ComInteropConstants
     /// </summary>
     public static readonly TimeSpan StartupTimeout = TimeSpan.FromMinutes(2);
 
+    /// <summary>
+    /// Poll interval used while waiting for a freshly started Word to accept COM calls.
+    /// </summary>
+    public static readonly TimeSpan WarmupPollInterval = TimeSpan.FromMilliseconds(250);
+
     #endregion
 
     #region Word file formats (WdSaveFormat)

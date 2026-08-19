@@ -228,7 +228,7 @@ public sealed class TableCommands : ITableCommands
 
         try
         {
-            table.Style = style;
+            table.Style = WordStyles.Resolve(style);
         }
         catch (System.Runtime.InteropServices.COMException ex)
         {

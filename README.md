@@ -176,6 +176,8 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **Rights-protected documents** (IRM/AIP) are rejected before Word is launched.
 * **A document open in Word blocks the session** — close it first.
 * **Word dialogs stall automation.** If a call times out, check for an open dialog on the desktop.
+* **Style names are English.** Built-in styles (`Heading 1`, `Title`, `Table Grid`, …) are translated to Word's language-independent style ids, so they work on localized installations. Any other name is passed to Word as-is, which is how custom and localized styles are addressed. Note that Word *reports* styles under their localized name (`Überschrift 1` on a German install).
+* **New documents are written directly, not via Word.** `file(create)` writes an empty `.docx`/`.docm` package itself and then opens it. Creating documents through Word instead is unreliable on machines signed in to Microsoft 365, because AutoSave claims the new document for OneDrive and silently ignores the requested local path.
 * **Merged table cells** are returned as empty strings by `table(read)`.
 
 ---
@@ -196,10 +198,10 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 | `src/WordMcp.ComInterop` | Word COM lifecycle: STA threading, sessions, OLE message filter, file validation |
 | `src/WordMcp.Core` | Command implementations and result models |
 | `src/WordMcp.McpServer` | stdio MCP server exposing the five tools |
-| `tests/WordMcp.Core.Tests` | Unit tests, no Word required |
+| `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 
-Tests that need a real Word installation are marked `[Trait("Category", "RequiresWord")]` and are excluded in CI.
+Tests that need a real Word installation are marked `[Trait("Category", "RequiresWord")]` and are excluded in CI. Failed integration runs can leave orphaned `WINWORD.EXE` processes behind, which slow down or block later runs — clean them up with `Get-Process WINWORD | Stop-Process -Force` before re-running.
 
 ## Troubleshooting
 

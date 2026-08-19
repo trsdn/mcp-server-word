@@ -199,7 +199,7 @@ public sealed class ParagraphCommands : IParagraphCommands
 
         try
         {
-            paragraph.Range.Style = style;
+            paragraph.Range.Style = WordStyles.Resolve(style);
         }
         catch (System.Runtime.InteropServices.COMException ex)
         {
