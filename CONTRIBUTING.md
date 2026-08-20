@@ -52,7 +52,9 @@ Get-Process WINWORD -ErrorAction SilentlyContinue | Stop-Process -Force
 
 ## Adding a tool
 
-The MCP tool classes are generated. A new tool is three hand-written pieces:
+The MCP tool classes are generated. [docs/architecture.md](docs/architecture.md) explains the
+layering; [docs/com-interop.md](docs/com-interop.md) covers the COM rules a new implementation has
+to follow. A new tool is three hand-written pieces:
 
 1. **The interface** in `src/WordMcp.Core/Commands/<Name>/I<Name>Commands.cs`, carrying
    `[ServiceCategory]`, `[McpTool]` and one `[ServiceAction]` per action.
