@@ -1,0 +1,41 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+
+    <AssemblyName>WordMcp.ComInterop</AssemblyName>
+    <RootNamespace>WordMcp.ComInterop</RootNamespace>
+
+    <PackageId>WordMcp.ComInterop</PackageId>
+    <Title>WordMcp COM Interop Library</Title>
+    <Description>COM interop utilities for Microsoft Word automation. Provides COM object lifecycle management, STA threading, OLE message filtering and Word session management.</Description>
+    <PackageTags>word;automation;com;interop;ole;sta;threading;windows</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="WordMcp.ComInterop.Tests" />
+    <InternalsVisibleTo Include="WordMcp.Core.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Word COM Interop PIA. EmbedInteropTypes=true embeds only the used types at compile time,
+         removing the runtime dependency on office.dll (Microsoft.Office.Core), which .NET Core
+         cannot load from the .NET Framework GAC. -->
+    <PackageReference Include="Microsoft.Office.Interop.Word">
+      <EmbedInteropTypes>true</EmbedInteropTypes>
+      <NoWarn>NU1701</NoWarn>
+    </PackageReference>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

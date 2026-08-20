@@ -1,0 +1,76 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and test (Windows)
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Restore
+        run: dotnet restore WordMcp.sln
+
+      - name: Build
+        run: dotnet build WordMcp.sln --configuration Release --no-restore
+
+      # Tests requiring a real Word installation are excluded: GitHub runners have no Office.
+      - name: Test
+        run: >
+          dotnet test WordMcp.sln
+          --configuration Release
+          --no-build
+          --filter "Category!=RequiresWord"
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory ${{ github.workspace }}/TestResults
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: test-results
+          path: ${{ github.workspace }}/TestResults
+          if-no-files-found: ignore
+
+  pack:
+    name: Pack NuGet tool
+    runs-on: windows-latest
+    needs: build
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Pack
+        run: dotnet pack src/WordMcp.McpServer/WordMcp.McpServer.csproj --configuration Release --output ${{ github.workspace }}/artifacts
+
+      - name: Upload package
+        uses: actions/upload-artifact@v5
+        with:
+          name: nuget-package
+          path: ${{ github.workspace }}/artifacts/*.nupkg

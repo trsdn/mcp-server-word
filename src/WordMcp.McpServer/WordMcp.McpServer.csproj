@@ -1,0 +1,80 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+
+    <AssemblyName>WordMcp.McpServer</AssemblyName>
+    <RootNamespace>WordMcp.McpServer</RootNamespace>
+
+    <!-- API documentation is exposed through the MCP schema, not XML docs -->
+    <!-- CA1707: MCP tool parameters use snake_case by protocol convention -->
+    <NoWarn>$(NoWarn);CS1591;CA1707</NoWarn>
+
+    <PackageId>WordMcp.McpServer</PackageId>
+    <Title>MCP Server for Word</Title>
+    <Description>Microsoft Word automation for AI assistants - manage documents, text, paragraphs and tables. Requires Word to be installed. Only runs on Windows.</Description>
+    <PackageTags>mcp;model-context-protocol;word;microsoft;office;document;automation;docx;copilot;ai;github-copilot</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <PackageReleaseNotes>See https://github.com/trsdn/mcp-server-word/releases for release notes</PackageReleaseNotes>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>mcp-word</ToolCommandName>
+
+    <PublishSelfContained>false</PublishSelfContained>
+    <PublishTrimmed>false</PublishTrimmed>
+  </PropertyGroup>
+
+  <!-- The .NET 9 SDK unconditionally sets PackageType=DotnetTool when PackAsTool=true,
+       so the McpServer package type has to be appended just before packing. -->
+  <Target Name="_AddMcpServerPackageType" BeforeTargets="GenerateNuspec;Pack">
+    <PropertyGroup>
+      <PackageType>$(PackageType);McpServer</PackageType>
+    </PropertyGroup>
+  </Target>
+
+  <!-- Workaround for NETSDK1146: PackAsTool does not support net9.0-windows.
+       See https://github.com/dotnet/sdk/issues/12055 -->
+  <Target Name="HackBeforePackToolValidation" BeforeTargets="_PackToolValidation">
+    <PropertyGroup>
+      <TargetPlatformIdentifier></TargetPlatformIdentifier>
+      <TargetPlatformMoniker></TargetPlatformMoniker>
+    </PropertyGroup>
+  </Target>
+
+  <Target Name="HackAfterPackToolValidation" AfterTargets="_PackToolValidation" BeforeTargets="PackTool">
+    <PropertyGroup>
+      <TargetPlatformIdentifier>Windows</TargetPlatformIdentifier>
+    </PropertyGroup>
+  </Target>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WordMcp.Core\WordMcp.Core.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="WordMcp.McpServer.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="ModelContextProtocol" />
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Logging" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include=".mcp\server.json" Condition="Exists('.mcp\server.json')">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Pack>true</Pack>
+      <PackagePath>.mcp/server.json</PackagePath>
+    </Content>
+    <None Include="..\..\README.md" Pack="true" PackagePath="\" />
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+</Project>
