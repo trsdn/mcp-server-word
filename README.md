@@ -1,5 +1,7 @@
 # WordMcp — Microsoft Word MCP Server
 
+<!-- mcp-name: io.github.trsdn/mcp-server-word -->
+
 An [MCP](https://modelcontextprotocol.io) server that lets AI assistants drive **Microsoft Word for Windows** through COM automation: open documents, read and edit text, manage paragraphs and tables, set document properties and export to PDF.
 
 > **Windows only.** A local installation of Microsoft Word is required — this server automates the real application, it does not parse `.docx` files.

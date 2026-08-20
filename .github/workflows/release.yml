@@ -88,8 +88,9 @@ jobs:
           -p:Version=${{ steps.version.outputs.version }}
           --output ${{ github.workspace }}/artifacts
 
-      # The MCP registry rejects a server.json whose version disagrees with the package, and that
-      # only surfaces after publishing - so it is checked while the package is still local.
+      # The MCP registry rejects a server.json whose version disagrees with the package, and it
+      # verifies package ownership through an mcp-name marker in the packaged readme. Both only
+      # surface after publishing, so they are checked while the package is still local.
       - name: Verify packaged server.json
         shell: pwsh
         run: |
@@ -104,6 +105,12 @@ jobs:
 
             $reader = New-Object System.IO.StreamReader($entry.Open())
             $json = $reader.ReadToEnd() | ConvertFrom-Json
+
+            $readmeEntry = $zip.Entries | Where-Object { $_.FullName -eq 'README.md' }
+            if (-not $readmeEntry) { throw "The package does not contain README.md." }
+
+            $readmeReader = New-Object System.IO.StreamReader($readmeEntry.Open())
+            $readme = $readmeReader.ReadToEnd()
           } finally {
             $zip.Dispose()
           }
@@ -115,7 +122,12 @@ jobs:
             throw "server.json package entry says $($json.packages[0].version) but the package is $expected."
           }
 
-          Write-Host "server.json matches $expected."
+          # The marker must be followed by a boundary, or the registry does not match it.
+          if ($readme -notmatch "mcp-name:\s*$([regex]::Escape($json.name))(\s|-->|$)") {
+            throw "The readme does not carry 'mcp-name: $($json.name)', so the registry cannot verify ownership."
+          }
+
+          Write-Host "server.json matches $expected and the readme claims $($json.name)."
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v7
