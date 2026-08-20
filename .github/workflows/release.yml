@@ -118,7 +118,7 @@ jobs:
           Write-Host "server.json matches $expected."
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: nuget-package
           path: ${{ github.workspace }}/artifacts/*.nupkg
