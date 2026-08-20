@@ -8,7 +8,7 @@
     <!-- Word COM Interop PIA -->
     <PackageVersion Include="Microsoft.Office.Interop.Word" Version="15.0.4797.1004" />
     <!-- PDF rasterization for screenshot(page): Word can only export a page range as PDF -->
-    <PackageVersion Include="PDFtoImage" Version="5.3.0" />
+    <PackageVersion Include="PDFtoImage" Version="5.4.0" />
     <!-- Microsoft Extensions for MCP Server -->
     <PackageVersion Include="Microsoft.Extensions.Hosting" Version="9.0.4" />
     <PackageVersion Include="Microsoft.Extensions.Logging" Version="9.0.4" />
