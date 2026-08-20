@@ -15,7 +15,15 @@ namespace WordMcp.Core.Commands.Field;
 [ServiceCategory("field", "Field")]
 [McpTool("field",
     Title = "Field Operations",
-    Description = "Insert a table of contents and page numbers, update fields and list them.")]
+    Description = "Field operations on an open document. "
+        + "field(insert-toc, session_id, lower_heading_level=3) inserts a table of contents at the top "
+        + "and fills it immediately. It stays EMPTY unless paragraphs use heading styles, so apply "
+        + "'Heading 1'/'Heading 2' via paragraph(add, style=...) first; the result reports entry_count. "
+        + "field(insert-page-number, session_id, position='footer', alignment='center', include_total_pages=true) "
+        + "adds page numbers to every section. "
+        + "field(update-toc, session_id) refreshes the table of contents after content changed. "
+        + "field(update-all, session_id) refreshes every field including headers and footers. "
+        + "field(list, session_id) returns type, code and current result of each field.")]
 public interface IFieldCommands
 {
     /// <summary>

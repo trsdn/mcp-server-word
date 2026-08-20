@@ -10,7 +10,12 @@ namespace WordMcp.Core.Commands.Document;
 [ServiceCategory("document", "Document")]
 [McpTool("document",
     Title = "Document Operations",
-    Description = "Inspect document statistics, read and write document properties, export to PDF or other formats.")]
+    Description = "Document-level operations. "
+        + "document(get-info, session_id) returns word/page/paragraph/table counts. "
+        + "document(get-properties|set-properties, session_id, title=..., author=...) reads or writes metadata. "
+        + "document(export-pdf, session_id, output_path='C:\\\\...\\\\report.pdf') writes a PDF without changing the document. "
+        + "document(save-as, session_id, output_path='C:\\\\...\\\\copy.rtf') saves a copy; the format follows the extension "
+        + "(.docx, .docm, .doc, .pdf, .rtf, .txt, .html) and the open document is saved as part of the operation.")]
 public interface IDocumentCommands
 {
     /// <summary>

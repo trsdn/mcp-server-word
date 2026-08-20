@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    <IsRoslynComponent>true</IsRoslynComponent>
+    <RootNamespace>WordMcp.Generators.Mcp</RootNamespace>
+
+    <!-- A generator ships as an analyzer, not as a library -->
+    <IncludeBuildOutput>false</IncludeBuildOutput>
+    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+
+    <!-- netstandard2.0 lacks the newer overloads the solution-wide analyzer set expects -->
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <!-- RS1035: the generator reads the XML documentation next to the referenced assembly,
+         because the command-line compiler builds metadata references without a documentation
+         provider. The file changes only when the assembly does, so caching stays correct. -->
+    <NoWarn>$(NoWarn);RS1035;CS1591;CA1310;CA1307;CA1304;CA1311;CA1861;CA1002;CA2227;CA1819;CA1062;CA1051;IDE0005;IDE0055</NoWarn>
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);RS1035</WarningsNotAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" />
+    <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!-- Shared code is compiled in, because a generator cannot load a second assembly at runtime -->
+  <ItemGroup>
+    <Compile Include="..\WordMcp.Generators.Shared\*.cs" Link="Shared\%(Filename)%(Extension)" />
+  </ItemGroup>
+
+</Project>

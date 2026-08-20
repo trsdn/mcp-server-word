@@ -10,7 +10,14 @@ namespace WordMcp.Core.Commands.Table;
 [ServiceCategory("table", "Table")]
 [McpTool("table",
     Title = "Table Operations",
-    Description = "List tables, create new tables, read cell contents, write cells, add or delete rows and apply table styles.")]
+    Description = "Table operations on an open document. "
+        + "table(list, session_id) returns index, size and style of every table. "
+        + "table(create, session_id, rows=3, columns=4, style='Table Grid') appends a table. "
+        + "table(read, session_id, index=1) returns all cell values as rows. "
+        + "table(set-cell, session_id, index=1, row=1, column=2, text='Total') writes one cell. "
+        + "table(add-row, session_id, index=1, values=['a','b']) appends a filled row. "
+        + "table(delete-row|set-style, session_id, index=1, ...) edits an existing table. "
+        + "All indexes are 1-based.")]
 public interface ITableCommands
 {
     /// <summary>
@@ -51,7 +58,7 @@ public interface ITableCommands
     /// <param name="text">The cell text.</param>
     /// <returns>The result of the operation.</returns>
     [ServiceAction("set-cell")]
-    OperationResult SetCell(IWordBatch batch, int index, int row, int column, string text);
+    OperationResult SetCell(IWordBatch batch, int index, int row, int column, string text = "");
 
     /// <summary>
     /// Appends a row to a table, optionally filling it with values.

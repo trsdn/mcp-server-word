@@ -15,7 +15,15 @@ namespace WordMcp.Core.Commands.Image;
 [ServiceCategory("image", "Image")]
 [McpTool("image",
     Title = "Image Operations",
-    Description = "Insert images, list them, resize, replace, delete and set alternative text.")]
+    Description = "Inline image operations on an open document. "
+        + "image(list, session_id) returns index, size and alt text of every image. "
+        + "image(insert, session_id, image_path='C:/pics/chart.png', width=300, caption='Figure 1') "
+        + "appends an image; pass paragraph_index to place it before a specific paragraph. "
+        + "image(resize, session_id, index=1, scale_percent=50) or (index=1, width=200) resizes. "
+        + "image(replace, session_id, index=1, image_path=...) swaps the picture but keeps position and size. "
+        + "image(delete|set-alt-text, session_id, index=1, ...) edits an existing image. "
+        + "Sizes are in points (1 point = 1/72 inch), not pixels. All indexes are 1-based. "
+        + "Only inline images are covered, not floating shapes.")]
 public interface IImageCommands
 {
     /// <summary>

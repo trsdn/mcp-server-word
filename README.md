@@ -244,10 +244,30 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 | Project | Purpose |
 |---|---|
 | `src/WordMcp.ComInterop` | Word COM lifecycle: STA threading, sessions, OLE message filter, file validation |
-| `src/WordMcp.Core` | Command implementations and result models |
+| `src/WordMcp.Core` | Command interfaces, command implementations and result models |
+| `src/WordMcp.Generators.Shared` | Source files shared by the generators; not a project of its own |
+| `src/WordMcp.Generators.Mcp` | Roslyn source generator that emits the MCP tool classes |
 | `src/WordMcp.McpServer` | stdio MCP server exposing the nine tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
+
+### Generated tool layer
+
+Eight of the nine tools are generated at build time. The command interfaces in
+`src/WordMcp.Core/Commands` are the single source of truth for the wire contract:
+
+- `[ServiceCategory("section", "Section")]` names the tool class, `WordSectionTool`.
+- `[McpTool("section", Title = ..., Description = ...)]` supplies the tool name and the prompt the model reads.
+- `[ServiceAction("page-setup")]` on each method becomes a value of the generated `WordSectionAction` enum.
+- XML documentation on the interface parameters becomes the parameter descriptions in the MCP schema.
+
+The generator merges the parameters of all actions into one method, so a parameter used by only
+some actions is emitted as optional. To change the API, edit the interface — never the generated
+code. `file` stays hand-written because it manages sessions rather than operating on one.
+
+Inspect the emitted code under `src/WordMcp.McpServer/obj/generated`. The tests in
+`GeneratedToolContractTests` compare the generated surface against the interfaces, so a mismatch
+fails the build rather than reaching a client.
 
 Tests that need a real Word installation are marked `[Trait("Category", "RequiresWord")]` and are excluded in CI. Failed integration runs can leave orphaned `WINWORD.EXE` processes behind, which slow down or block later runs — clean them up with `Get-Process WINWORD | Stop-Process -Force` before re-running.
 

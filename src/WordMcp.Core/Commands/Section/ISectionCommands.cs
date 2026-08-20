@@ -15,7 +15,15 @@ namespace WordMcp.Core.Commands.Section;
 [ServiceCategory("section", "Section")]
 [McpTool("section",
     Title = "Section Operations",
-    Description = "List sections, insert section breaks and change margins, orientation and paper size.")]
+    Description = "Section operations on an open document. A section owns the page setup and the "
+        + "headers and footers, so changing margins or orientation for part of a document means "
+        + "adding a section first. "
+        + "section(list, session_id) returns index, start type, margins, page size and orientation. "
+        + "section(add, session_id, start_type='next-page', paragraph_index=...) inserts a section "
+        + "break after that paragraph, or at the end when omitted. "
+        + "section(page-setup, session_id, section_index=2, orientation='landscape', top_margin=72) "
+        + "changes one section; without section_index it changes the whole document. "
+        + "ALL MEASUREMENTS ARE IN POINTS: 72 pt = 1 inch = 2.54 cm.")]
 public interface ISectionCommands
 {
     /// <summary>
