@@ -85,7 +85,7 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 
 ## Tools
 
-Ten tools, each with an `action` parameter.
+Eleven tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -209,6 +209,26 @@ style(action: "modify", session_id: "...", name: "Callout",
 
 ---
 
+### `list` — bullets and numbering
+
+| Action | Purpose |
+|---|---|
+| `get` | Report the list formatting of the paragraphs, including the rendered bullet or number |
+| `apply` | Format a paragraph range as a `bullet`, `number` or `outline-number` list |
+| `set-level` | Set the list level of a paragraph range (1–9) |
+| `restart` | Start the numbering over at a paragraph |
+| `remove` | Strip the list formatting |
+
+Omitting `end_index` applies the action to `start_index` alone.
+
+```jsonc
+list(action: "apply", session_id: "...", start_index: 2, end_index: 5, list_type: "number")
+list(action: "set-level", session_id: "...", start_index: 3, end_index: 4, level: 2)
+list(action: "restart", session_id: "...", start_index: 6)
+```
+
+---
+
 ## Responses
 
 Every tool returns JSON. Failures are reported as structured payloads, never as a transport error:
@@ -246,6 +266,8 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **`section(page-setup)` applies `paper_size` before the margins**, because changing the paper size resets them in Word. Without a `section_index` the setup is applied to every section.
 * **Headers and footers are inherited between sections.** A new section shows the previous section's header until something is written to it. `header-footer(set)` with a `section_index` breaks that link automatically, so section 1 keeps its own text.
 * **`first-page` and `even-pages` headers need a section switch.** `header-footer(set)` turns on `DifferentFirstPage` respectively `DifferentOddEvenPages` for you — without it Word stores the text but never renders it.
+* **`list(apply)` starts a new list by default.** `continue_previous_list` is off, because picking up the numbering of an unrelated earlier list is rarely what was meant. Two numbered lists separated by plain paragraphs stay independent; use `list(restart)` when Word merges them anyway.
+* **Only outline-number lists render distinct levels.** `list(set-level)` works on any list, but a plain `bullet` or `number` list shows the same marker on every level — the paragraphs are merely indented.
 
 ---
 
@@ -266,13 +288,13 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 | `src/WordMcp.Core` | Command interfaces, command implementations and result models |
 | `src/WordMcp.Generators.Shared` | Source files shared by the generators; not a project of its own |
 | `src/WordMcp.Generators.Mcp` | Roslyn source generator that emits the MCP tool classes |
-| `src/WordMcp.McpServer` | stdio MCP server exposing the ten tools |
+| `src/WordMcp.McpServer` | stdio MCP server exposing the eleven tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 
 ### Generated tool layer
 
-Nine of the ten tools are generated at build time. The command interfaces in
+Ten of the eleven tools are generated at build time. The command interfaces in
 `src/WordMcp.Core/Commands` are the single source of truth for the wire contract:
 
 - `[ServiceCategory("section", "Section")]` names the tool class, `WordSectionTool`.

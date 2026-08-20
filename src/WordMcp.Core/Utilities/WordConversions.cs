@@ -293,6 +293,41 @@ public static class WordConversions
         _ => "other"
     };
 
+    /// <summary>
+    /// Converts a friendly list kind into the <c>WdListGalleryType</c> constant.
+    /// </summary>
+    /// <param name="listType">The list kind: bullet, number or outline-number.</param>
+    /// <returns>The Word list gallery constant.</returns>
+    /// <exception cref="ArgumentException">The kind is unknown.</exception>
+    public static int ToWdListGallery(string listType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(listType);
+
+        return NormalizeName(listType) switch
+        {
+            "bullet" or "bullets" => ComInteropConstants.WdBulletGallery,
+            "number" or "numbered" or "numbering" => ComInteropConstants.WdNumberGallery,
+            "outline-number" or "outline" => ComInteropConstants.WdOutlineNumberGallery,
+            _ => throw new ArgumentException(
+                $"Unknown list type '{listType}'. Use one of: bullet, number, outline-number.",
+                nameof(listType))
+        };
+    }
+
+    /// <summary>
+    /// Converts a <c>WdListType</c> value to its friendly name.
+    /// </summary>
+    /// <param name="wdListType">The Word list type constant.</param>
+    /// <returns>The friendly list kind name.</returns>
+    public static string FromWdListType(int wdListType) => wdListType switch
+    {
+        ComInteropConstants.WdListNoNumbering => "none",
+        ComInteropConstants.WdListBullet => "bullet",
+        ComInteropConstants.WdListListNumOnly or ComInteropConstants.WdListSimpleNumbering => "number",
+        ComInteropConstants.WdListOutlineNumbering or ComInteropConstants.WdListMixedNumbering => "outline-number",
+        _ => "other"
+    };
+
     private static string NormalizeName(string value)
         => value.Trim().ToLowerInvariant().Replace('_', '-').Replace(" ", string.Empty, StringComparison.Ordinal);
 }
