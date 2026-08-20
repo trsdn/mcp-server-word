@@ -51,20 +51,6 @@ public class WordToolsBaseTests
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("")]
-    [InlineData("   ")]
-    public void Batch_RequiresSessionId(string? sessionId)
-    {
-        var ex = Assert.Throws<ArgumentException>(() => WordToolsBase.Batch(sessionId));
-        Assert.Contains("session_id", ex.Message, StringComparison.Ordinal);
-    }
-
-    [Fact]
-    public void Batch_ReportsUnknownSessionId()
-        => Assert.Throws<KeyNotFoundException>(() => WordToolsBase.Batch("word-doesnotexist"));
-
-    [Theory]
     [InlineData("report.docx")]
     [InlineData(@"..\report.docx")]
     [InlineData(@"docs\report.docx")]

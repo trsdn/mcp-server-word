@@ -7,6 +7,10 @@
     <AssemblyName>WordMcp.Service</AssemblyName>
     <RootNamespace>WordMcp.Service</RootNamespace>
 
+    <!-- Write the generated dispatch classes to disk so they can be reviewed in a diff -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
+
     <PackageId>WordMcp.Service</PackageId>
     <Title>WordMcp Session Service</Title>
     <Description>Holds Word sessions outside the MCP server process so several clients can share one open document. Provides the request/response protocol, per-user named pipe security and the session lifecycle.</Description>
@@ -24,6 +28,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WordMcp.ComInterop\WordMcp.ComInterop.csproj" />
+    <ProjectReference Include="..\WordMcp.Core\WordMcp.Core.csproj" />
+    <ProjectReference Include="..\WordMcp.Generators.Mcp\WordMcp.Generators.Mcp.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>

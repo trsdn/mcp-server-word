@@ -65,26 +65,27 @@ through.
 ### WordMcp.McpServer
 
 The host: stdio transport, DI, logging to stderr from `Warning` upwards (stdout carries the
-protocol, and MCP clients surface stderr as an error). `WordServices` exposes one static property
-per command interface, and `WordToolsBase` provides the shared serialization and the `try`/`catch`
-that turns any exception into a JSON error payload rather than a transport failure.
+protocol, and MCP clients surface stderr as an error). `WordToolsBase` provides the shared
+serialization and the `try`/`catch` that turns any exception into a JSON error payload rather than
+a transport failure.
 
 `WordFileTool` is the only hand-written tool, because session lifecycle does not fit the
 generator's shape. The other fourteen are generated.
 
-`ServiceBridge` is the seam to the session service. It exists because the file tool and
-`WordMcpService` used to carry two copies of open, create, save, close, list and test — and which
-copy a user hit depended on which entry point they came in through. The tool now validates the
-path, hands the command to the service and serializes what comes back. It still keeps the path
-validation, so the caller who typed a relative path or a `.pptx` gets the tool's wording rather
-than the service's.
+`ServiceBridge` is the seam to the session service, and everything crossing it is data. It exists
+because the file tool and `WordMcpService` used to carry two copies of open, create, save, close,
+list and test — and which copy a user hit depended on which entry point they came in through. A
+tool now validates what only it can validate, hands the command to the service and serializes what
+comes back. Path validation stays in the tool, so the caller who typed a relative path or a `.pptx`
+gets the tool's wording rather than the service's.
 
 The service reports failures as data; the tool layer formats them from exceptions.
 `ServiceCommandException` carries the reported CLR type name across that gap, so a caller still
 sees `FileNotFoundException` and not the wrapper.
 
-What the bridge cannot route yet is `Batch`: an `IWordBatch` is a live COM handle, and the
-generated tools need one. That is the piece still standing between the bridge and a daemon mode.
+Nothing in this project holds a COM object any more — not even indirectly. That is what makes
+`WORDMCP_SERVICE_MODE=daemon` a working switch rather than a promise: the same tool call runs
+in-process or travels down a pipe to another process, and no tool can tell which.
 
 ### WordMcp.Service
 
@@ -135,20 +136,43 @@ against a running one. `ServiceClient` is the other side, and starting it is the
 The accept loop parks in `WaitForConnectionAsync`, which no cancellation token can interrupt on
 Windows, so the watchdog that notices shutdown or idleness wakes it with a throwaway connection.
 
+Set `WORDMCP_SERVICE_MODE=daemon` to make the MCP server route every command through that pipe
+instead of running the service in its own process. In-process stays the default because it is what
+a single client wants: no second process, no pipe, no startup wait. The daemon earns its keep only
+when several clients have to see the same open document.
+
+One thing the daemon uncovered that no in-process run could: Word is driven through `dynamic`, and
+the runtime binder needs `office.dll` to bind a member — a file every build copies next to the
+executable but no package declares as a runtime dependency. A test host probes its own directory
+and hides this; a plain executable does not, and the daemon could not open a single document until
+`ComAssemblyResolver` taught it to look. It resolves only the Office interop assemblies, from the
+application directory, and is installed by `WordBatch` itself so no host has to remember it.
+
 ## The generated tool layer
 
-A source generator reads the command interfaces and emits one MCP tool class per
-`[ServiceCategory]`. For each tool it produces a method with an `action` parameter, the union of
-all parameters of that tool's actions (each nullable, since a given action uses only some), a
-switch over the action names, and the `Execute` wrapper.
+A source generator reads the command interfaces and emits **both halves of the process boundary**
+from the same description, which is the only way they cannot drift apart:
 
-The generator resolves the interface type to the `WordServices` property that provides it. **A new
-command interface without a matching property on `WordServices` produces nothing** — no error, no
-tool.
+- In `WordMcp.McpServer` it emits one MCP tool class per `[ServiceCategory]`: a method with an
+  `action` parameter, the union of all parameters of that tool's actions (each nullable, since a
+  given action uses only some), and a body that packs those parameters under their wire names and
+  hands `category.action` to `ServiceBridge`.
+- In `WordMcp.Service` it emits the dispatcher that unpacks them again, applies the same defaults,
+  raises the same "x is required for this action." errors, and calls the command implementation.
+  It finds that implementation by looking for the class implementing the interface, so adding a
+  category needs no registry entry anywhere.
 
-`EmitCompilerGeneratedFiles` is on, so the output lands in `src/WordMcp.McpServer/obj/generated`
-and can be read like ordinary code. It is worth looking at once after adding a tool, to confirm
-that the description a client sees is the one that was written.
+The generator picks its half from the assembly name of the compilation it runs in, and is
+referenced as an analyzer by both projects.
+
+The session is resolved lazily, only once the dispatcher recognises the command. A misspelled
+command therefore reports that it is unknown instead of complaining about a missing `session_id`
+the caller never needed to supply.
+
+`EmitCompilerGeneratedFiles` is on for both projects, so the output lands in
+`src/WordMcp.McpServer/obj/generated` and `src/WordMcp.Service/obj/generated` and can be read like
+ordinary code. It is worth looking at once after adding a tool, to confirm that the description a
+client sees is the one that was written.
 
 Why generate: fifteen tools with close to seventy actions between them means the boilerplate is
 where the bugs would be, and a hand-written tool class drifts from its interface silently.
@@ -159,12 +183,15 @@ where the bugs would be, and a hand-written tool class drifts from its interface
 tool call
   → generated tool method
       → WordToolsBase.Execute(tool, action, …)      catch → JSON error
-          → WordToolsBase.Batch(session_id)         → SessionManager
-              → XyzCommands.Action(batch, args)
-                  → validate arguments              throws here on bad input
-                  → batch.Execute(word => …)        marshalled to the STA thread
-                      → Word COM
-                  ← result record
+          → ServiceBridge.Invoke("text.replace", session_id, { … })
+              → in-process, or one line down a named pipe
+                  → GeneratedToolDispatch                 → unknown command stops here
+                      → session lookup                    → SessionManager
+                      → XyzCommands.Action(batch, args)
+                          → validate arguments            throws here on bad input
+                          → batch.Execute(word => …)      marshalled to the STA thread
+                              → Word COM
+                          ← result record
           ← JSON
 ```
 

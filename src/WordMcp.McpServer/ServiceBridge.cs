@@ -1,5 +1,4 @@
 using System.Text.Json;
-using WordMcp.ComInterop.Session;
 using WordMcp.Service;
 
 namespace WordMcp.McpServer;
@@ -12,18 +11,35 @@ namespace WordMcp.McpServer;
 /// copy of open, create, save, close, list and test. Two implementations of the same rules drift,
 /// and the one the user hits is decided by which entry point they came through. Everything session
 /// shaped now goes through here, so there is one answer.</para>
-/// <para>The bridge is in-process: it holds a <see cref="WordMcpService"/> and calls it directly.
-/// The point of routing through it anyway is that the calls are already data only, which is what a
-/// later move onto the pipe needs. What cannot cross yet is <see cref="Batch"/> — an
-/// <see cref="IWordBatch"/> is a live COM handle, and the generated tools still need one.</para>
+/// <para>Nothing crossing this seam is anything but data. That is what lets the same call run
+/// in-process or travel down a named pipe to a daemon, chosen by <c>WORDMCP_SERVICE_MODE</c>,
+/// without a single tool knowing which one it got.</para>
 /// </remarks>
 internal static class ServiceBridge
 {
+    /// <summary>Environment variable that selects in-process or daemon operation.</summary>
+    public const string ModeVariable = "WORDMCP_SERVICE_MODE";
+
     private static readonly Lock Gate = new();
     private static WordMcpService? _service;
+    private static ServiceClient? _client;
 
     /// <summary>
-    /// Gets the service, creating it on first use so an idle server never starts Word.
+    /// Gets a value indicating whether commands travel to a separate daemon process.
+    /// </summary>
+    /// <remarks>
+    /// In-process is the default because it is what a single client wants: no second process, no
+    /// pipe, no startup wait. Daemon mode is for the case the in-process one cannot serve at all —
+    /// several clients that have to see the same open document.
+    /// </remarks>
+    public static bool UseDaemon
+        => string.Equals(
+            Environment.GetEnvironmentVariable(ModeVariable),
+            "daemon",
+            StringComparison.OrdinalIgnoreCase);
+
+    /// <summary>
+    /// Gets the in-process service, creating it on first use so an idle server never starts Word.
     /// </summary>
     public static WordMcpService Service
     {
@@ -37,16 +53,9 @@ internal static class ServiceBridge
     }
 
     /// <summary>
-    /// Resolves the batch behind a session id.
-    /// </summary>
-    /// <param name="sessionId">The session identifier supplied by the caller.</param>
-    /// <returns>The batch for that session.</returns>
-    public static IWordBatch Batch(string? sessionId) => Service.GetBatch(sessionId);
-
-    /// <summary>
     /// Runs one service command and returns its payload.
     /// </summary>
-    /// <param name="command">The command name, for example <c>session.open</c>.</param>
+    /// <param name="command">The command name, for example <c>session.open</c> or <c>text.insert</c>.</param>
     /// <param name="sessionId">The session the command applies to, when it is session scoped.</param>
     /// <param name="args">Arguments, serialized as the command's argument object.</param>
     /// <returns>The result payload, ready to be serialized into the tool response.</returns>
@@ -64,7 +73,9 @@ internal static class ServiceBridge
         // The service is asynchronous because a pipe host needs it to be; in-process the only
         // await is the open gate, and blocking on it here is what keeps the tool signatures
         // synchronous for the MCP SDK.
-        var response = Service.ProcessAsync(request).GetAwaiter().GetResult();
+        var response = UseDaemon
+            ? Client.SendAsync(request).GetAwaiter().GetResult()
+            : Service.ProcessAsync(request).GetAwaiter().GetResult();
 
         if (!response.Success)
         {
@@ -81,12 +92,31 @@ internal static class ServiceBridge
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.
     /// </summary>
+    /// <remarks>
+    /// In daemon mode this deliberately leaves the sessions alone: outliving one client is the
+    /// entire point of the daemon, and the idle timeout is what ends its life.
+    /// </remarks>
     public static void Shutdown()
     {
         lock (Gate)
         {
             _service?.Dispose();
             _service = null;
+            _client?.Dispose();
+            _client = null;
+        }
+    }
+
+    private static ServiceClient Client
+    {
+        get
+        {
+            lock (Gate)
+            {
+                return _client ??= new ServiceClient(
+                    ServiceSecurity.GetServicePipeName(),
+                    logger: WordServices.Logger);
+            }
         }
     }
 }

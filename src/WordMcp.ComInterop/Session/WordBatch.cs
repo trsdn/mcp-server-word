@@ -23,9 +23,14 @@ internal sealed class WordBatch : IWordBatch
     [DllImport("user32.dll")]
     private static extern uint GetWindowThreadProcessId(IntPtr hWnd, out uint processId);
 
+    /// <summary>
+    /// Makes the Office interop assemblies loadable before the first dynamic call binds against
+    /// them. Doing it here rather than in each host is what keeps it from being forgotten.
+    /// </summary>
+    static WordBatch() => ComAssemblyResolver.Install();
+
     private readonly string _documentPath;
-    private readonly string[] _allDocumentPaths;
-    private readonly bool _visible;
+    private readonly string[] _allDocumentPaths;    private readonly bool _visible;
     private readonly bool _createNewFile;
     private readonly bool _isMacroEnabled;
     private readonly TimeSpan _operationTimeout;
@@ -268,8 +273,7 @@ internal sealed class WordBatch : IWordBatch
         catch (Exception ex)
         {
             started.TrySetException(ex);
-            CleanupCom();
-            OleMessageFilter.Revoke();
+            SafeCleanup();
             return;
         }
 #pragma warning restore CA1031
@@ -290,7 +294,33 @@ internal sealed class WordBatch : IWordBatch
         }
         finally
         {
+            SafeCleanup();
+        }
+    }
+
+    /// <summary>
+    /// Releases the COM objects without letting a failure escape.
+    /// </summary>
+    /// <remarks>
+    /// This runs on the STA thread, which has no caller to catch anything: an exception here does
+    /// not fail a session, it ends the whole process. That matters most in the service, where one
+    /// unlucky document would take every other session down with it. Whatever actually went wrong
+    /// has already been reported to the caller by this point.
+    /// </remarks>
+    private void SafeCleanup()
+    {
+        try
+        {
             CleanupCom();
+        }
+#pragma warning disable CA1031 // Nothing above this frame can handle a cleanup failure
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Releasing Word after '{Path}' failed", _documentPath);
+        }
+#pragma warning restore CA1031
+        finally
+        {
             OleMessageFilter.Revoke();
         }
     }

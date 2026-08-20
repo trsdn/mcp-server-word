@@ -15,21 +15,48 @@ namespace WordMcp.Generators.Mcp;
 public sealed class McpToolGenerator : IIncrementalGenerator
 {
     private const string ToolsNamespace = "WordMcp.McpServer.Tools";
-    private const string ServicesType = "WordMcp.McpServer.WordServices";
+    private const string ToolAssembly = "WordMcp.McpServer";
+    private const string ServiceAssembly = "WordMcp.Service";
+    private const string DispatchNamespace = "WordMcp.Service.Generated";
 
     /// <inheritdoc />
     public void Initialize(IncrementalGeneratorInitializationContext context)
     {
-        var services = context.CompilationProvider.Select(static (compilation, _) => Discover(compilation));
+        var services = context.CompilationProvider.Select(static (compilation, _) =>
+            (Assembly: compilation.AssemblyName ?? string.Empty, Services: Discover(compilation)));
 
         context.RegisterSourceOutput(services, static (productionContext, discovered) =>
         {
-            foreach (var service in discovered)
+            // The same description feeds both halves of the boundary: the tool that packs the
+            // arguments and the dispatcher that unpacks them. Emitting them from one place is what
+            // keeps them from drifting apart.
+            switch (discovered.Assembly)
             {
-                string source = Emit(service);
-                productionContext.AddSource(
-                    $"WordTool.{service.Info.CategoryPascal}.g.cs",
-                    SourceText.From(source, Encoding.UTF8));
+                case ToolAssembly:
+                    foreach (var service in discovered.Services)
+                    {
+                        productionContext.AddSource(
+                            $"WordTool.{service.Info.CategoryPascal}.g.cs",
+                            SourceText.From(Emit(service.Info), Encoding.UTF8));
+                    }
+
+                    break;
+
+                case ServiceAssembly:
+                    foreach (var service in discovered.Services)
+                    {
+                        productionContext.AddSource(
+                            $"WordDispatch.{service.Info.CategoryPascal}.g.cs",
+                            SourceText.From(EmitDispatch(service), Encoding.UTF8));
+                    }
+
+                    productionContext.AddSource(
+                        "GeneratedToolDispatch.g.cs",
+                        SourceText.From(EmitAggregator(discovered.Services), Encoding.UTF8));
+                    break;
+
+                default:
+                    break;
             }
         });
     }
@@ -40,9 +67,10 @@ public sealed class McpToolGenerator : IIncrementalGenerator
     /// </summary>
     private static ImmutableArray<DiscoveredService> Discover(Compilation compilation)
     {
-        var servicesByInterface = MapServiceProperties(compilation);
         var documentation = DocumentationSource.Load(compilation, "WordMcp.");
         var builder = ImmutableArray.CreateBuilder<DiscoveredService>();
+        var candidates = new List<INamedTypeSymbol>();
+        var implementations = new List<INamedTypeSymbol>();
 
         foreach (var reference in compilation.References)
         {
@@ -60,53 +88,49 @@ public sealed class McpToolGenerator : IIncrementalGenerator
 
             foreach (var type in EnumerateTypes(assembly.GlobalNamespace))
             {
-                if (type.TypeKind != TypeKind.Interface)
+                if (type.TypeKind == TypeKind.Interface)
                 {
-                    continue;
+                    candidates.Add(type);
                 }
-
-                var info = ServiceInfoExtractor.Extract(type, documentation);
-                if (info is null)
+                else if (type is { TypeKind: TypeKind.Class, IsAbstract: false, DeclaredAccessibility: Accessibility.Public })
                 {
-                    continue;
+                    implementations.Add(type);
                 }
-
-                if (!servicesByInterface.TryGetValue(info.InterfaceName, out string? property))
-                {
-                    property = Pluralize(info.CategoryPascal);
-                }
-
-                builder.Add(new DiscoveredService(info, property));
             }
+        }
+
+        foreach (var type in candidates)
+        {
+            var info = ServiceInfoExtractor.Extract(type, documentation);
+            if (info is null)
+            {
+                continue;
+            }
+
+            builder.Add(new DiscoveredService(info, FindImplementation(implementations, type)));
         }
 
         return builder.ToImmutable();
     }
 
     /// <summary>
-    /// Reads the static WordServices class and maps each command interface to the property that
-    /// returns it, so the generated dispatch never has to guess a name.
+    /// Finds the class implementing a command interface, so the dispatch half can construct it
+    /// without a hand-maintained registry that would have to be edited for every new category.
     /// </summary>
-    private static Dictionary<string, string> MapServiceProperties(Compilation compilation)
+    private static string? FindImplementation(List<INamedTypeSymbol> classes, INamedTypeSymbol interfaceSymbol)
     {
-        var map = new Dictionary<string, string>(StringComparer.Ordinal);
-        var services = compilation.GetTypeByMetadataName(ServicesType);
-
-        if (services is null)
+        foreach (var candidate in classes)
         {
-            return map;
-        }
-
-        foreach (var member in services.GetMembers())
-        {
-            if (member is IPropertySymbol { IsStatic: true } property
-                && property.Type.TypeKind == TypeKind.Interface)
+            foreach (var implemented in candidate.AllInterfaces)
             {
-                map[property.Type.Name] = property.Name;
+                if (SymbolEqualityComparer.Default.Equals(implemented, interfaceSymbol))
+                {
+                    return candidate.ToDisplayString();
+                }
             }
         }
 
-        return map;
+        return null;
     }
 
     private static IEnumerable<INamedTypeSymbol> EnumerateTypes(INamespaceSymbol root)
@@ -127,54 +151,8 @@ public sealed class McpToolGenerator : IIncrementalGenerator
         }
     }
 
-    /// <summary>
-    /// Fallback naming when WordServices does not expose the interface. "HeaderFooter" becomes
-    /// "HeadersFooters" because each word is pluralized on its own.
-    /// </summary>
-    private static string Pluralize(string pascalName)
+    private static string Emit(ServiceInfo info)
     {
-        var words = SplitWords(pascalName);
-        var sb = new StringBuilder();
-
-        foreach (string word in words)
-        {
-            sb.Append(word);
-            if (!word.EndsWith("s", StringComparison.Ordinal))
-            {
-                sb.Append('s');
-            }
-        }
-
-        return sb.ToString();
-    }
-
-    private static List<string> SplitWords(string pascalName)
-    {
-        var words = new List<string>();
-        var current = new StringBuilder();
-
-        foreach (char c in pascalName)
-        {
-            if (char.IsUpper(c) && current.Length > 0)
-            {
-                words.Add(current.ToString());
-                current.Clear();
-            }
-
-            current.Append(c);
-        }
-
-        if (current.Length > 0)
-        {
-            words.Add(current.ToString());
-        }
-
-        return words;
-    }
-
-    private static string Emit(DiscoveredService service)
-    {
-        var info = service.Info;
         var exposed = ServiceInfoExtractor.GetExposedParameters(info);
         string enumName = $"Word{info.CategoryPascal}Action";
         string className = $"Word{info.CategoryPascal}Tool";
@@ -192,7 +170,7 @@ public sealed class McpToolGenerator : IIncrementalGenerator
         sb.AppendLine();
 
         EmitEnum(sb, info, enumName);
-        EmitTool(sb, service, exposed, enumName, className);
+        EmitTool(sb, info, exposed, enumName, className);
 
         return sb.ToString();
     }
@@ -227,12 +205,11 @@ public sealed class McpToolGenerator : IIncrementalGenerator
 
     private static void EmitTool(
         StringBuilder sb,
-        DiscoveredService service,
+        ServiceInfo info,
         List<ExposedParameter> exposed,
         string enumName,
         string className)
     {
-        var info = service.Info;
         string methodName = info.CategoryPascal;
 
         sb.AppendLine("/// <summary>");
@@ -285,21 +262,29 @@ public sealed class McpToolGenerator : IIncrementalGenerator
         }
 
         sb.AppendLine(")");
-        sb.AppendLine($"        => WordToolsBase.Execute(\"{info.ToolName}\", action.ToString(), () =>");
-        sb.AppendLine("        {");
-        sb.AppendLine("            var batch = WordToolsBase.Batch(session_id);");
-        sb.AppendLine();
-        sb.AppendLine("            return action switch");
+        sb.AppendLine($"        => WordToolsBase.Execute(\"{info.ToolName}\", action.ToString(), () => ServiceBridge.Invoke(");
+        sb.AppendLine("            action switch");
         sb.AppendLine("            {");
 
         foreach (var method in info.Methods)
         {
-            EmitCase(sb, service, method, enumName, exposed);
+            sb.AppendLine($"                {enumName}.{method.ActionPascal} => \"{info.ToolName}.{method.ActionName}\",");
         }
 
         sb.AppendLine("                _ => throw new ArgumentException($\"Unknown action '{action}'.\", nameof(action))");
-        sb.AppendLine("            };");
-        sb.AppendLine("        });");
+        sb.AppendLine("            },");
+        sb.AppendLine("            session_id,");
+
+        // The arguments travel as a plain object whose property names are the wire names, so the
+        // dispatcher on the other side reads them back under the names the caller typed.
+        sb.AppendLine("            new");
+        sb.AppendLine("            {");
+        for (int i = 0; i < exposed.Count; i++)
+        {
+            sb.AppendLine($"                {exposed[i].WireName}{(i == exposed.Count - 1 ? string.Empty : ",")}");
+        }
+
+        sb.AppendLine("            }));");
         sb.AppendLine("}");
     }
 
@@ -319,71 +304,174 @@ public sealed class McpToolGenerator : IIncrementalGenerator
         sb.Append($"        [DefaultValue(null)] {type} {parameter.WireName} = null");
     }
 
-    private static void EmitCase(
-        StringBuilder sb,
-        DiscoveredService service,
-        MethodInfo method,
-        string enumName,
-        List<ExposedParameter> exposed)
+    /// <summary>
+    /// Emits the dispatch half: the class that unpacks one category's arguments and calls the
+    /// command implementation. This is the code the tool half talks to across the boundary.
+    /// </summary>
+    private static string EmitDispatch(DiscoveredService service)
     {
-        var arguments = new List<string> { "batch" };
+        var info = service.Info;
+        var exposed = ServiceInfoExtractor.GetExposedParameters(info);
 
-        foreach (var parameter in method.Parameters)
+        var sb = new StringBuilder();
+        sb.AppendLine("// <auto-generated/>");
+        sb.AppendLine("#nullable enable");
+        sb.AppendLine();
+        sb.AppendLine("using System;");
+        sb.AppendLine("using System.Text.Json;");
+        sb.AppendLine("using WordMcp.ComInterop.Session;");
+        sb.AppendLine();
+        sb.AppendLine($"namespace {DispatchNamespace};");
+        sb.AppendLine();
+        sb.AppendLine($"/// <summary>Runs the actions of the <c>{Escape(info.ToolName)}</c> tool.</summary>");
+        sb.AppendLine($"internal static class {info.CategoryPascal}Dispatch");
+        sb.AppendLine("{");
+
+        if (service.Implementation is null)
         {
-            var declared = exposed.Find(p => p.Name == parameter.Name)!;
-            arguments.Add(BuildArgument(parameter, declared));
+            // No implementation in reach: emit a dispatcher that declines everything rather than
+            // failing the build, so a partially wired category cannot break the whole service.
+            sb.AppendLine("    /// <summary>Always declines: no implementation was found.</summary>");
+            sb.AppendLine("    internal static bool TryInvoke(string action, Func<IWordBatch> batch, JsonElement args, out object? result)");
+            sb.AppendLine("    {");
+            sb.AppendLine("        result = null;");
+            sb.AppendLine("        return false;");
+            sb.AppendLine("    }");
+            sb.AppendLine("}");
+            return sb.ToString();
         }
 
-        string call = $"WordServices.{service.ServiceProperty}.{method.MethodName}({string.Join(", ", arguments)})";
-        string line = $"                {enumName}.{method.ActionPascal} => {call},";
+        sb.AppendLine($"    private static readonly {info.InterfaceNamespace}.{info.InterfaceName} Commands");
+        sb.AppendLine($"        = new {service.Implementation}();");
+        sb.AppendLine();
+        sb.AppendLine("    /// <summary>Runs one action against an open document.</summary>");
+        sb.AppendLine("    /// <param name=\"action\">The action name without the category prefix.</param>");
+        sb.AppendLine("    /// <param name=\"batch\">Resolves the session, but only once the action is known.</param>");
+        sb.AppendLine("    /// <param name=\"args\">The arguments as the tool packed them.</param>");
+        sb.AppendLine("    /// <param name=\"result\">The action's result when it ran.</param>");
+        sb.AppendLine("    /// <returns><c>true</c> when the action is known to this category.</returns>");
+        sb.AppendLine("    internal static bool TryInvoke(string action, Func<IWordBatch> batch, JsonElement args, out object? result)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        switch (action)");
+        sb.AppendLine("        {");
 
-        if (line.Length <= 118)
+        foreach (var method in info.Methods)
         {
-            sb.AppendLine(line);
-            return;
+            var arguments = new List<string> { "batch()" };
+            foreach (var parameter in method.Parameters)
+            {
+                arguments.Add(BuildDispatchArgument(parameter, exposed.Find(p => p.Name == parameter.Name)!));
+            }
+
+            sb.AppendLine($"            case \"{method.ActionName}\":");
+            sb.AppendLine($"                result = Commands.{method.MethodName}(");
+            for (int i = 0; i < arguments.Count; i++)
+            {
+                sb.AppendLine($"                    {arguments[i]}{(i == arguments.Count - 1 ? ");" : ",")}");
+            }
+
+            sb.AppendLine("                return true;");
+            sb.AppendLine();
         }
 
-        sb.AppendLine($"                {enumName}.{method.ActionPascal} => WordServices.{service.ServiceProperty}.{method.MethodName}(");
-        for (int i = 0; i < arguments.Count; i++)
-        {
-            sb.AppendLine($"                    {arguments[i]}{(i == arguments.Count - 1 ? "),": ",")}");
-        }
+        sb.AppendLine("            default:");
+        sb.AppendLine("                result = null;");
+        sb.AppendLine("                return false;");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+
+        return sb.ToString();
     }
 
     /// <summary>
-    /// Builds the argument expression for one parameter, bridging the gap between the optional
-    /// tool parameter and what the command method actually accepts.
+    /// Emits the one entry point the service calls: it splits <c>category.action</c> and hands the
+    /// work to the matching category.
     /// </summary>
-    private static string BuildArgument(ParameterInfo parameter, ExposedParameter declared)
+    private static string EmitAggregator(ImmutableArray<DiscoveredService> services)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine("// <auto-generated/>");
+        sb.AppendLine("#nullable enable");
+        sb.AppendLine();
+        sb.AppendLine("using System;");
+        sb.AppendLine("using System.Text.Json;");
+        sb.AppendLine("using WordMcp.ComInterop.Session;");
+        sb.AppendLine();
+        sb.AppendLine($"namespace {DispatchNamespace};");
+        sb.AppendLine();
+        sb.AppendLine("/// <summary>Routes a tool command to the category that implements it.</summary>");
+        sb.AppendLine("internal static class GeneratedToolDispatch");
+        sb.AppendLine("{");
+        sb.AppendLine("    /// <summary>Runs a <c>category.action</c> command against an open document.</summary>");
+        sb.AppendLine("    /// <param name=\"command\">The command name, for example <c>text.insert</c>.</param>");
+        sb.AppendLine("    /// <param name=\"batch\">Resolves the session, but only once the command is known.</param>");
+        sb.AppendLine("    /// <param name=\"args\">The arguments as the tool packed them.</param>");
+        sb.AppendLine("    /// <param name=\"result\">The command's result when it ran.</param>");
+        sb.AppendLine("    /// <returns><c>true</c> when the command is known.</returns>");
+        sb.AppendLine("    internal static bool TryInvoke(string command, Func<IWordBatch> batch, JsonElement args, out object? result)");
+        sb.AppendLine("    {");
+        sb.AppendLine("        int separator = command.IndexOf('.');");
+        sb.AppendLine("        if (separator <= 0)");
+        sb.AppendLine("        {");
+        sb.AppendLine("            result = null;");
+        sb.AppendLine("            return false;");
+        sb.AppendLine("        }");
+        sb.AppendLine();
+        sb.AppendLine("        string action = command.Substring(separator + 1);");
+        sb.AppendLine();
+        sb.AppendLine("        switch (command.Substring(0, separator))");
+        sb.AppendLine("        {");
+
+        foreach (var service in services)
+        {
+            sb.AppendLine($"            case \"{service.Info.ToolName}\":");
+            sb.AppendLine($"                return {service.Info.CategoryPascal}Dispatch.TryInvoke(action, batch, args, out result);");
+        }
+
+        sb.AppendLine("            default:");
+        sb.AppendLine("                result = null;");
+        sb.AppendLine("                return false;");
+        sb.AppendLine("        }");
+        sb.AppendLine("    }");
+        sb.AppendLine("}");
+
+        return sb.ToString();
+    }
+
+    /// <summary>
+    /// Builds the argument expression on the dispatch side: reads the value back out of the JSON
+    /// the tool sent, and reproduces the same fallbacks and the same errors the tool used to raise.
+    /// </summary>
+    private static string BuildDispatchArgument(ParameterInfo parameter, ExposedParameter declared)
     {
         string name = declared.WireName;
+        string bare = parameter.TypeName.TrimEnd('?');
+        bool isValueType = bare is "int" or "long" or "double" or "float" or "decimal" or "bool";
+        string read = isValueType ? $"ToolArgs.Val<{bare}>(args, \"{name}\")" : $"ToolArgs.Ref<{bare}>(args, \"{name}\")";
 
-        // The declared parameter kept its non-nullable type, so it always carries a usable value.
+        // The tool declared the parameter non-nullable, so every action agrees on a fallback.
         if (declared.CanStayNonNullable)
         {
-            return name;
+            return $"{read} ?? {declared.DefaultValue}";
         }
 
         // The command accepts null itself, so nothing has to be substituted.
         if (parameter.TypeName.EndsWith("?", StringComparison.Ordinal))
         {
-            return name;
+            return read;
         }
 
         // The command declares a default, so an omitted value falls back to it.
         if (parameter.HasDefault && parameter.DefaultValue != null)
         {
-            return $"{name} ?? {parameter.DefaultValue}";
+            return $"{read} ?? {parameter.DefaultValue}";
         }
 
         // The command needs a value and has no fallback, so the omission has to become an error.
-        return parameter.TypeName switch
-        {
-            "string" => $"WordToolsBase.RequireText({name}, nameof({name}))",
-            "int" or "double" or "bool" or "long" or "float" or "decimal"
-                => $"WordToolsBase.Require({name}, nameof({name}))",
-            _ => $"WordToolsBase.RequireValue({name}, nameof({name}))"
-        };
+        return isValueType
+            ? $"ToolArgs.RequireVal<{bare}>(args, \"{name}\")"
+            : $"ToolArgs.RequireRef<{bare}>(args, \"{name}\")";
     }
 
     private static string Escape(string text)
@@ -394,15 +482,15 @@ public sealed class McpToolGenerator : IIncrementalGenerator
 
     private sealed class DiscoveredService
     {
-        public DiscoveredService(ServiceInfo info, string serviceProperty)
+        public DiscoveredService(ServiceInfo info, string? implementation)
         {
             Info = info;
-            ServiceProperty = serviceProperty;
+            Implementation = implementation;
         }
 
         public ServiceInfo Info { get; }
 
-        /// <summary>Name of the WordServices property that returns the command interface.</summary>
-        public string ServiceProperty { get; }
+        /// <summary>Fully qualified name of the class implementing the interface, if one was found.</summary>
+        public string? Implementation { get; }
     }
 }

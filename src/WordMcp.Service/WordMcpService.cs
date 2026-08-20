@@ -1,7 +1,9 @@
 using System.Globalization;
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using WordMcp.ComInterop;
 using WordMcp.ComInterop.Session;
+using WordMcp.Service.Generated;
 
 namespace WordMcp.Service;
 
@@ -168,9 +170,32 @@ public sealed class WordMcpService : IDisposable
             "session.close" => Close(request.SessionId, Args(request).Save ?? true),
             "session.list" => List(),
             "session.test" => Test(Args(request).FilePath),
-            _ => ServiceResponse.Fail(
-                $"Unknown command '{request.Command}'.", nameof(NotSupportedException))
+            _ => InvokeTool(request)
         };
+
+    /// <summary>
+    /// Runs a generated tool command against an open session.
+    /// </summary>
+    /// <remarks>
+    /// Everything the service does not handle itself is a tool command. The session is resolved
+    /// lazily, so a misspelled command is reported as unknown instead of complaining about a
+    /// session the caller never needed to supply.
+    /// </remarks>
+    private ServiceResponse InvokeTool(ServiceRequest request)
+    {
+        using var document = string.IsNullOrWhiteSpace(request.Args)
+            ? JsonDocument.Parse("{}")
+            : JsonDocument.Parse(request.Args!);
+
+        return GeneratedToolDispatch.TryInvoke(
+            request.Command,
+            () => GetBatch(request.SessionId),
+            document.RootElement,
+            out var result)
+            ? ServiceResponse.Ok(result ?? new { success = true })
+            : ServiceResponse.Fail(
+                $"Unknown command '{request.Command}'.", nameof(NotSupportedException));
+    }
 
     private static SessionArgs Args(ServiceRequest request)
         => (request.Args is null ? null : ServiceProtocol.Deserialize<SessionArgs>(request.Args)) ?? new SessionArgs();
