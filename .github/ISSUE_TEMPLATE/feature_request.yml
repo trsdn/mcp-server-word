@@ -1,0 +1,51 @@
+name: Feature request
+description: A tool or action the server should support
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        The server is organized as tools with actions - `table(read)`, `style(modify)` and so on.
+        A request is easiest to act on when it names where it belongs.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What you are trying to do
+      description: >
+        Describe the document work, not the API you have in mind. What the assistant is supposed to
+        accomplish usually suggests a better shape than a guessed method signature.
+      placeholder: |
+        I want an assistant to fill a contract template: find the placeholder fields, replace them
+        with values, and confirm nothing was left unfilled.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed tool and actions
+      description: Which tool would this belong to, and what would the call look like?
+      placeholder: |
+        content-control(list) and content-control(set) - new tool, since placeholders in real
+        templates are content controls rather than plain text.
+      render: text
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What you tried instead
+      description: Which existing tools you used, and where they fell short.
+
+  - type: dropdown
+    id: word-support
+    attributes:
+      label: Does Word expose this?
+      description: >
+        Not a requirement - but if you already know the COM API involved, it saves a research pass.
+      options:
+        - "Yes, I know the Word API for it"
+        - "Probably, but I have not checked"
+        - "No idea"
+    validations:
+      required: true

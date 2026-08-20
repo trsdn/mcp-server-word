@@ -1,0 +1,77 @@
+name: Bug report
+description: Something does not work the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Most problems in this project come down to one of three things: the Word version, an open
+        dialog blocking automation, or a document that is not what it looks like. The questions
+        below exist to rule those out quickly.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What did you expect, and what did you get instead?
+      placeholder: |
+        Called table(read) on a document with merged cells and got empty strings for the
+        merged ones. I expected the text of the merged cell.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How to reproduce
+      description: >
+        The tool calls in order, with their arguments. If a specific document is needed, describe
+        what is in it - or attach it, with anything confidential removed.
+      placeholder: |
+        1. file(action: "open", path: "C:/temp/report.docx")
+        2. table(action: "read", session_id: "...", table_index: 1)
+      render: text
+    validations:
+      required: true
+
+  - type: textarea
+    id: error
+    attributes:
+      label: Error output
+      description: The full JSON error response, or the server log if there is no response.
+      render: json
+
+  - type: input
+    id: word-version
+    attributes:
+      label: Word version
+      description: In Word, File > Account > About Word. The build number matters.
+      placeholder: "Microsoft 365, 16.0.20412, German UI"
+    validations:
+      required: true
+
+  - type: input
+    id: server-version
+    attributes:
+      label: Server version
+      description: The version of the MCP server, or the commit if you built it yourself.
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: input
+    id: os
+    attributes:
+      label: Windows version and architecture
+      placeholder: "Windows 11 24H2, ARM64"
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before filing
+      options:
+        - label: No Word dialog was open on the desktop when this happened
+        - label: The document was not open in Word in another window
+        - label: The document is not rights-protected (IRM/AIP)

@@ -411,6 +411,16 @@ Tests that need a real Word installation are marked `[Trait("Category", "Require
 | Operation times out | A Word dialog is waiting for input; close it and retry |
 | `The file is already open in Word` | Close the document in the Word UI |
 
+## Contributing
+
+Bug reports and feature requests go through the [issue templates](https://github.com/trsdn/mcp-server-word/issues/new/choose).
+Pull requests are welcome; the checklist in the PR template covers what the build enforces.
+
+Please read the [Code of Conduct](CODE_OF_CONDUCT.md) first.
+
+**Do not file a public issue for a security problem** — report it privately as described in the
+[security policy](SECURITY.md).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
