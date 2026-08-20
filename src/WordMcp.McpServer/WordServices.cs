@@ -4,6 +4,7 @@ using WordMcp.Core.Commands.Document;
 using WordMcp.Core.Commands.Field;
 using WordMcp.Core.Commands.HeaderFooter;
 using WordMcp.Core.Commands.Image;
+using WordMcp.Core.Commands.List;
 using WordMcp.Core.Commands.Paragraph;
 using WordMcp.Core.Commands.Section;
 using WordMcp.Core.Commands.Style;
@@ -65,6 +66,9 @@ internal static class WordServices
 
     /// <summary>Gets the style command implementation.</summary>
     public static IStyleCommands Styles { get; } = new StyleCommands();
+
+    /// <summary>Gets the list command implementation.</summary>
+    public static IListCommands Lists { get; } = new ListCommands();
 
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.

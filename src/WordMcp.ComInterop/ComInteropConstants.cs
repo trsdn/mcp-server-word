@@ -219,6 +219,58 @@ public static class ComInteropConstants
 
     #endregion
 
+    #region Lists
+
+    /// <summary>WdListGalleryType.wdBulletGallery = 1.</summary>
+    public const int WdBulletGallery = 1;
+
+    /// <summary>WdListGalleryType.wdNumberGallery = 2.</summary>
+    public const int WdNumberGallery = 2;
+
+    /// <summary>WdListGalleryType.wdOutlineNumberGallery = 3.</summary>
+    public const int WdOutlineNumberGallery = 3;
+
+    /// <summary>WdListApplyTo.wdListApplyToWholeList = 0.</summary>
+    public const int WdListApplyToWholeList = 0;
+
+    /// <summary>WdListApplyTo.wdListApplyToSelection = 2.</summary>
+    public const int WdListApplyToSelection = 2;
+
+    /// <summary>
+    /// WdDefaultListBehavior.wdWord10ListBehavior = 2. The modern behaviour, which is the only one
+    /// that keeps multi-level lists intact.
+    /// </summary>
+    public const int WdWord10ListBehavior = 2;
+
+    /// <summary>WdNumberType.wdNumberParagraph = 1.</summary>
+    public const int WdNumberParagraph = 1;
+
+    /// <summary>WdNumberType.wdNumberAllNumbers = 3.</summary>
+    public const int WdNumberAllNumbers = 3;
+
+    /// <summary>WdListType.wdListNoNumbering = 0.</summary>
+    public const int WdListNoNumbering = 0;
+
+    /// <summary>WdListType.wdListListNumOnly = 1.</summary>
+    public const int WdListListNumOnly = 1;
+
+    /// <summary>WdListType.wdListBullet = 2.</summary>
+    public const int WdListBullet = 2;
+
+    /// <summary>WdListType.wdListSimpleNumbering = 3.</summary>
+    public const int WdListSimpleNumbering = 3;
+
+    /// <summary>WdListType.wdListOutlineNumbering = 4.</summary>
+    public const int WdListOutlineNumbering = 4;
+
+    /// <summary>WdListType.wdListMixedNumbering = 5.</summary>
+    public const int WdListMixedNumbering = 5;
+
+    /// <summary>Highest list level Word supports.</summary>
+    public const int MaxListLevel = 9;
+
+    #endregion
+
     #region Supported extensions
 
     /// <summary>
