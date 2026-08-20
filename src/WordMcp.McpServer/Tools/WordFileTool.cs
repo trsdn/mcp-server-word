@@ -1,7 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json.Serialization;
 using ModelContextProtocol.Server;
-using WordMcp.ComInterop;
 
 namespace WordMcp.McpServer.Tools;
 
@@ -62,103 +61,28 @@ public static class WordFileTool
         {
             WordFileAction.Open => Open(path, show, timeout_seconds),
             WordFileAction.Create => Create(path, show, timeout_seconds),
-            WordFileAction.Save => Save(session_id),
-            WordFileAction.Close => Close(session_id, save),
-            WordFileAction.List => List(),
+            WordFileAction.Save => ServiceBridge.Invoke("session.save", session_id),
+            WordFileAction.Close => ServiceBridge.Invoke("session.close", session_id, new { save }),
+            WordFileAction.List => ServiceBridge.Invoke("session.list"),
             WordFileAction.Test => Test(path),
             _ => throw new ArgumentException($"Unknown action '{action}'.", nameof(action))
         });
 
     private static object Open(string? path, bool show, int timeoutSeconds)
-    {
-        var fullPath = WordToolsBase.ValidatePath(path, mustExist: true);
-
-        var existing = WordServices.Sessions.FindByPath(fullPath);
-        if (existing != null)
+        => ServiceBridge.Invoke("session.open", args: new
         {
-            return new
-            {
-                success = true,
-                sessionId = existing.SessionId,
-                filePath = existing.FilePath,
-                reused = true,
-                message = "Document is already open; reusing the existing session."
-            };
-        }
-
-        var info = WordServices.Sessions.Open(fullPath, show, timeoutSeconds);
-        return new
-        {
-            success = true,
-            sessionId = info.SessionId,
-            filePath = info.FilePath,
-            visible = info.Visible,
-            reused = false,
-            message = "Session opened. Pass session_id to the other tools."
-        };
-    }
+            filePath = WordToolsBase.ValidatePath(path, mustExist: true),
+            visible = show,
+            timeoutSeconds
+        });
 
     private static object Create(string? path, bool show, int timeoutSeconds)
-    {
-        var fullPath = WordToolsBase.ValidatePath(path, mustExist: false);
-
-        if (System.IO.File.Exists(fullPath))
+        => ServiceBridge.Invoke("session.create", args: new
         {
-            throw new IOException(
-                $"File already exists: {fullPath}. Use file(action:'open') instead, or choose a different path.");
-        }
-
-        var info = WordServices.Sessions.Create(fullPath, show, timeoutSeconds);
-        return new
-        {
-            success = true,
-            sessionId = info.SessionId,
-            filePath = info.FilePath,
-            visible = info.Visible,
-            message = "Document created and session opened."
-        };
-    }
-
-    private static object Save(string? sessionId)
-    {
-        WordToolsBase.Batch(sessionId);
-        WordServices.Sessions.Save(sessionId!);
-        return new { success = true, sessionId, message = "Document saved." };
-    }
-
-    private static object Close(string? sessionId, bool save)
-    {
-        if (string.IsNullOrWhiteSpace(sessionId))
-        {
-            throw new ArgumentException("session_id is required for 'close'.", nameof(sessionId));
-        }
-
-        var closed = WordServices.Sessions.Close(sessionId, save);
-        return new
-        {
-            success = closed,
-            sessionId,
-            saved = save && closed,
-            message = closed
-                ? save ? "Document saved and session closed." : "Session closed without saving."
-                : $"No open session with id '{sessionId}'."
-        };
-    }
-
-    private static object List()
-    {
-        var sessions = WordServices.Sessions.List()
-            .Select(s => new
-            {
-                sessionId = s.SessionId,
-                filePath = s.FilePath,
-                visible = s.Visible,
-                openedAt = s.OpenedAt
-            })
-            .ToArray();
-
-        return new { success = true, count = sessions.Length, sessions };
-    }
+            filePath = WordToolsBase.ValidatePath(path, mustExist: false),
+            visible = show,
+            timeoutSeconds
+        });
 
     private static object Test(string? path)
     {
@@ -167,48 +91,8 @@ public static class WordFileTool
             throw new ArgumentException("path is required for 'test'.", nameof(path));
         }
 
-        var fullPath = Path.GetFullPath(path);
-        var extension = Path.GetExtension(fullPath);
-        var exists = System.IO.File.Exists(fullPath);
-
-        var problems = new List<string>();
-
-        if (!exists)
-        {
-            problems.Add("File does not exist.");
-        }
-
-        if (!ComInteropConstants.SupportedExtensions.Contains(extension, StringComparer.OrdinalIgnoreCase))
-        {
-            problems.Add($"Unsupported extension '{extension}'.");
-        }
-
-        if (exists)
-        {
-            try
-            {
-                FileAccessValidator.ValidateFileNotLocked(fullPath);
-            }
-            catch (InvalidOperationException ex)
-            {
-                problems.Add(ex.Message);
-            }
-
-            if (FileAccessValidator.IsIrmProtected(fullPath))
-            {
-                problems.Add("File appears to be IRM/RMS protected and cannot be automated.");
-            }
-        }
-
-        return new
-        {
-            success = problems.Count == 0,
-            filePath = fullPath,
-            exists,
-            extension,
-            canOpen = problems.Count == 0,
-            problems,
-            message = problems.Count == 0 ? "File can be opened." : string.Join(" ", problems)
-        };
+        // Unlike open and create, an unsupported extension is reported as a finding rather than
+        // thrown: answering "what would happen" is the entire point of this action.
+        return ServiceBridge.Invoke("session.test", args: new { filePath = Path.GetFullPath(path) });
     }
 }

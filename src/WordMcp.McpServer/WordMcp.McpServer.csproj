@@ -73,6 +73,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WordMcp.Core\WordMcp.Core.csproj" />
+    <ProjectReference Include="..\WordMcp.Service\WordMcp.Service.csproj" />
     <ProjectReference Include="..\WordMcp.Generators.Mcp\WordMcp.Generators.Mcp.csproj"
                       OutputItemType="Analyzer"
                       ReferenceOutputAssembly="false" />

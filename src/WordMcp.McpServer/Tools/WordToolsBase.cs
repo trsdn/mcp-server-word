@@ -42,7 +42,7 @@ internal static class WordToolsBase
                 isError = true,
                 tool,
                 action,
-                errorType = ex.GetType().Name,
+                errorType = ex is ServiceCommandException { ErrorType: { } reported } ? reported : ex.GetType().Name,
                 errorMessage = Describe(ex)
             });
         }
@@ -63,16 +63,7 @@ internal static class WordToolsBase
     /// <param name="sessionId">The session id supplied by the caller.</param>
     /// <returns>The batch for that session.</returns>
     public static IWordBatch Batch(string? sessionId)
-    {
-        if (string.IsNullOrWhiteSpace(sessionId))
-        {
-            throw new ArgumentException(
-                "session_id is required. Call file(action:'open', path:'C:\\\\...\\\\document.docx') first.",
-                nameof(sessionId));
-        }
-
-        return WordServices.Sessions.GetBatch(sessionId);
-    }
+        => ServiceBridge.Batch(sessionId);
 
     /// <summary>
     /// Validates that a path is an absolute Windows path with a supported extension.

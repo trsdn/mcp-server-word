@@ -120,7 +120,7 @@ public static class Program
         {
             // Without this, a client disconnect would silently discard unsaved work and
             // leave WINWORD.EXE running.
-            WordServices.Shutdown();
+            ServiceBridge.Shutdown();
         }
     }
 
