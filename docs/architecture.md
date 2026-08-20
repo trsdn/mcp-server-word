@@ -19,9 +19,8 @@ WINWORD.EXE
 ```
 
 `WordMcp.Service` sits beside the MCP server and wraps `SessionManager` behind a data-only
-request/response contract, so sessions can move out of the client's process. The MCP server does
-not route through it yet — that migration is tracked separately — but the layer is in place and
-tested.
+request/response contract, so sessions can move out of the client's process. The MCP server routes
+every session operation through it via `ServiceBridge`, in-process for now.
 
 `WordMcp.Generators.Mcp` and `WordMcp.Generators.Shared` are build-time only; they ship no runtime
 code.
@@ -72,6 +71,20 @@ that turns any exception into a JSON error payload rather than a transport failu
 
 `WordFileTool` is the only hand-written tool, because session lifecycle does not fit the
 generator's shape. The other fourteen are generated.
+
+`ServiceBridge` is the seam to the session service. It exists because the file tool and
+`WordMcpService` used to carry two copies of open, create, save, close, list and test — and which
+copy a user hit depended on which entry point they came in through. The tool now validates the
+path, hands the command to the service and serializes what comes back. It still keeps the path
+validation, so the caller who typed a relative path or a `.pptx` gets the tool's wording rather
+than the service's.
+
+The service reports failures as data; the tool layer formats them from exceptions.
+`ServiceCommandException` carries the reported CLR type name across that gap, so a caller still
+sees `FileNotFoundException` and not the wrapper.
+
+What the bridge cannot route yet is `Batch`: an `IWordBatch` is a live COM handle, and the
+generated tools need one. That is the piece still standing between the bridge and a daemon mode.
 
 ### WordMcp.Service
 

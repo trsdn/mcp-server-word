@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging;
-using WordMcp.ComInterop.Session;
 using WordMcp.Core.Commands.Document;
 using WordMcp.Core.Commands.Bookmark;
 using WordMcp.Core.Commands.Comment;
@@ -21,26 +20,12 @@ namespace WordMcp.McpServer;
 /// Process-wide singletons used by the MCP tools.
 /// </summary>
 /// <remarks>
-/// The MCP SDK discovers tools as static methods, so the session manager and command
-/// implementations are held here instead of being resolved through DI.
+/// The MCP SDK discovers tools as static methods, so the command implementations are held here
+/// instead of being resolved through DI. Sessions are not: they belong to
+/// <see cref="ServiceBridge"/>, which is the only thing in the process that owns one.
 /// </remarks>
 internal static class WordServices
 {
-    private static readonly Lock Gate = new();
-    private static SessionManager? _sessions;
-
-    /// <summary>Gets the shared session manager.</summary>
-    public static SessionManager Sessions
-    {
-        get
-        {
-            lock (Gate)
-            {
-                return _sessions ??= new SessionManager(Logger);
-            }
-        }
-    }
-
     /// <summary>Gets or sets the logger handed to new sessions.</summary>
     public static ILogger? Logger { get; set; }
 
@@ -85,16 +70,4 @@ internal static class WordServices
 
     /// <summary>Gets the screenshot command implementation.</summary>
     public static IScreenshotCommands Screenshots { get; } = new ScreenshotCommands();
-
-    /// <summary>
-    /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.
-    /// </summary>
-    public static void Shutdown()
-    {
-        lock (Gate)
-        {
-            _sessions?.Dispose();
-            _sessions = null;
-        }
-    }
 }
