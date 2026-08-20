@@ -111,9 +111,45 @@ public static class ComInteropConstants
     /// <summary>WdFindWrap.wdFindContinue = 1.</summary>
     public const int WdFindContinue = 1;
 
+    /// <summary>WdFieldType.wdFieldTOC = 13.</summary>
+    public const int WdFieldToc = 13;
+
+    /// <summary>WdFieldType.wdFieldNumPages = 26.</summary>
+    public const int WdFieldNumPages = 26;
+
+    /// <summary>WdFieldType.wdFieldPage = 33.</summary>
+    public const int WdFieldPage = 33;
+
+    /// <summary>WdHeaderFooterIndex.wdHeaderFooterPrimary = 1.</summary>
+    public const int WdHeaderFooterPrimary = 1;
+
+    /// <summary>WdInlineShapeType.wdInlineShapePicture = 3.</summary>
+    public const int WdInlineShapePicture = 3;
+
+    /// <summary>WdInlineShapeType.wdInlineShapeLinkedPicture = 4.</summary>
+    public const int WdInlineShapeLinkedPicture = 4;
+
+    /// <summary>MsoTriState.msoTrue = -1.</summary>
+    public const int MsoTrue = -1;
+
+    /// <summary>MsoTriState.msoFalse = 0.</summary>
+    public const int MsoFalse = 0;
+
+    /// <summary>WdCaptionLabelID.wdCaptionFigure = -1.</summary>
+    public const int WdCaptionFigure = -1;
+
+    /// <summary>WdCaptionPosition.wdCaptionPositionBelow = 1.</summary>
+    public const int WdCaptionPositionBelow = 1;
+
     #endregion
 
     #region Supported extensions
+
+    /// <summary>
+    /// Image formats that can be inserted through <c>InlineShapes.AddPicture</c>.
+    /// </summary>
+    public static readonly string[] SupportedImageExtensions =
+        [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".tif", ".tiff", ".emf", ".wmf", ".svg"];
 
     /// <summary>
     /// File extensions this server can open through Word COM automation.
