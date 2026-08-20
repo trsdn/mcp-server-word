@@ -78,6 +78,21 @@ public static class ComInteropConstants
     /// <summary>WdStatistic.wdStatisticParagraphs = 4.</summary>
     public const int WdStatisticParagraphs = 4;
 
+    /// <summary>WdExportFormat.wdExportFormatPDF = 17.</summary>
+    public const int WdExportFormatPdf = 17;
+
+    /// <summary>WdExportOptimizeFor.wdExportOptimizeForPrint = 0.</summary>
+    public const int WdExportOptimizeForPrint = 0;
+
+    /// <summary>WdExportRange.wdExportAllDocument = 0.</summary>
+    public const int WdExportAllDocument = 0;
+
+    /// <summary>WdExportRange.wdExportFromTo = 3 — export a page range.</summary>
+    public const int WdExportFromTo = 3;
+
+    /// <summary>WdExportItem.wdExportDocumentContent = 0 — export without markup.</summary>
+    public const int WdExportDocumentContent = 0;
+
     /// <summary>WdCollapseDirection.wdCollapseEnd = 0.</summary>
     public const int WdCollapseEnd = 0;
 
