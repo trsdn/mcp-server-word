@@ -1,0 +1,159 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to build, without the leading v (e.g. 0.2.0). Produces artifacts only, never publishes."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build, test and publish
+    runs-on: windows-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          global-json-file: global.json
+
+      - name: Resolve version
+        id: version
+        shell: pwsh
+        run: |
+          if ($env:GITHUB_REF -like 'refs/tags/*') {
+            $version = $env:GITHUB_REF -replace '^refs/tags/v', ''
+            $publish = 'true'
+          } else {
+            $version = '${{ inputs.version }}'
+            $publish = 'false'
+          }
+
+          # A tag that is not a version is a mistake worth failing on rather than publishing.
+          if ($version -notmatch '^\d+\.\d+\.\d+(-[0-9A-Za-z.-]+)?$') {
+            throw "'$version' is not a valid version. Expected MAJOR.MINOR.PATCH with an optional prerelease suffix."
+          }
+
+          # A prerelease tag must not become the version users get from `dotnet tool install`.
+          $prerelease = if ($version -match '-') { 'true' } else { 'false' }
+
+          "version=$version" >> $env:GITHUB_OUTPUT
+          "publish=$publish" >> $env:GITHUB_OUTPUT
+          "prerelease=$prerelease" >> $env:GITHUB_OUTPUT
+          Write-Host "Releasing $version (publish=$publish, prerelease=$prerelease)"
+
+      - name: Restore
+        run: dotnet restore WordMcp.sln
+
+      - name: Build
+        run: >
+          dotnet build WordMcp.sln
+          --configuration Release
+          --no-restore
+          -p:Version=${{ steps.version.outputs.version }}
+
+      # Word integration tests are excluded: GitHub runners have no Office installation.
+      - name: Test
+        run: >
+          dotnet test WordMcp.sln
+          --configuration Release
+          --no-build
+          --filter "Category!=RequiresWord"
+          -p:Version=${{ steps.version.outputs.version }}
+
+      - name: Pack
+        run: >
+          dotnet pack src/WordMcp.McpServer/WordMcp.McpServer.csproj
+          --configuration Release
+          --no-build
+          -p:Version=${{ steps.version.outputs.version }}
+          --output ${{ github.workspace }}/artifacts
+
+      # The MCP registry rejects a server.json whose version disagrees with the package, and that
+      # only surfaces after publishing - so it is checked while the package is still local.
+      - name: Verify packaged server.json
+        shell: pwsh
+        run: |
+          $expected = '${{ steps.version.outputs.version }}'
+          $package = Get-ChildItem "${{ github.workspace }}/artifacts/*.nupkg" | Select-Object -First 1
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+
+          $zip = [System.IO.Compression.ZipFile]::OpenRead($package.FullName)
+          try {
+            $entry = $zip.Entries | Where-Object { $_.FullName -eq '.mcp/server.json' }
+            if (-not $entry) { throw "The package does not contain .mcp/server.json." }
+
+            $reader = New-Object System.IO.StreamReader($entry.Open())
+            $json = $reader.ReadToEnd() | ConvertFrom-Json
+          } finally {
+            $zip.Dispose()
+          }
+
+          if ($json.version -ne $expected) {
+            throw "server.json says $($json.version) but the package is $expected."
+          }
+          if ($json.packages[0].version -ne $expected) {
+            throw "server.json package entry says $($json.packages[0].version) but the package is $expected."
+          }
+
+          Write-Host "server.json matches $expected."
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v5
+        with:
+          name: nuget-package
+          path: ${{ github.workspace }}/artifacts/*.nupkg
+
+      - name: Push to NuGet
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        run: |
+          if (-not $env:NUGET_API_KEY) {
+            throw "The NUGET_API_KEY repository secret is not set, so this release cannot be published."
+          }
+
+          dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" `
+            --source https://api.nuget.org/v3/index.json `
+            --api-key $env:NUGET_API_KEY `
+            --skip-duplicate
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      - name: Create GitHub release
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # PowerShell does not expand wildcards for external commands, so the asset is resolved here.
+          $package = Get-ChildItem "${{ github.workspace }}/artifacts/*.nupkg" | Select-Object -First 1
+
+          $arguments = @(
+            'release', 'create', '${{ github.ref_name }}', $package.FullName,
+            '--title', 'v${{ steps.version.outputs.version }}',
+            '--generate-notes'
+          )
+          if ('${{ steps.version.outputs.prerelease }}' -eq 'true') { $arguments += '--prerelease' }
+
+          gh @arguments
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
