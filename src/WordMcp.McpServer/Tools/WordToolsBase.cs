@@ -112,8 +112,41 @@ internal static class WordToolsBase
         return fullPath;
     }
 
-    private static string Describe(Exception ex) => ex switch
-    {
+    /// <summary>
+    /// Unwraps a value type an action cannot run without.
+    /// </summary>
+    /// <typeparam name="T">The underlying value type.</typeparam>
+    /// <param name="value">The value supplied by the caller.</param>
+    /// <param name="name">Parameter name, used in the error message.</param>
+    /// <returns>The value.</returns>
+    public static T Require<T>(T? value, string name)
+        where T : struct
+        => value ?? throw new ArgumentException($"{name} is required for this action.", name);
+
+    /// <summary>
+    /// Unwraps a reference type an action cannot run without.
+    /// </summary>
+    /// <typeparam name="T">The reference type.</typeparam>
+    /// <param name="value">The value supplied by the caller.</param>
+    /// <param name="name">Parameter name, used in the error message.</param>
+    /// <returns>The value.</returns>
+    public static T RequireValue<T>(T? value, string name)
+        where T : class
+        => value ?? throw new ArgumentException($"{name} is required for this action.", name);
+
+    /// <summary>
+    /// Unwraps a string an action cannot run without. Blank counts as missing, because a
+    /// whitespace-only style or bookmark name is never what the caller meant.
+    /// </summary>
+    /// <param name="value">The value supplied by the caller.</param>
+    /// <param name="name">Parameter name, used in the error message.</param>
+    /// <returns>The value.</returns>
+    public static string RequireText(string? value, string name)
+        => string.IsNullOrWhiteSpace(value)
+            ? throw new ArgumentException($"{name} is required for this action.", name)
+            : value;
+
+    private static string Describe(Exception ex) => ex switch    {
         KeyNotFoundException => ex.Message,
         FileNotFoundException => ex.Message,
         TimeoutException => $"{ex.Message} Word may be showing a dialog; close it and retry.",

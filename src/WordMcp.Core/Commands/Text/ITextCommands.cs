@@ -10,7 +10,13 @@ namespace WordMcp.Core.Commands.Text;
 [ServiceCategory("text", "Text")]
 [McpTool("text",
     Title = "Text Operations",
-    Description = "Read document text, append text, find and replace, and apply character formatting.")]
+    Description = "Text operations on an open document. "
+        + "text(get, session_id) returns the full text; add start/end to read a character range. "
+        + "text(append, session_id, text='...') appends a paragraph at the end. "
+        + "text(find, session_id, text='term') returns match positions and context. "
+        + "text(replace, session_id, text='old', replace_text='new') replaces occurrences. "
+        + "text(format, session_id, start=0, end=20, bold=true, color='#0078D4') formats a character range. "
+        + "Positions are Word character offsets as reported by get and find.")]
 public interface ITextCommands
 {
     /// <summary>

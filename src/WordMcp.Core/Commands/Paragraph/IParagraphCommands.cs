@@ -10,7 +10,12 @@ namespace WordMcp.Core.Commands.Paragraph;
 [ServiceCategory("paragraph", "Paragraph")]
 [McpTool("paragraph",
     Title = "Paragraph Operations",
-    Description = "List paragraphs with their styles, add or insert paragraphs, delete them, and set style or alignment.")]
+    Description = "Paragraph operations on an open document. "
+        + "paragraph(list, session_id, skip=0, take=200) returns index, text, style, alignment and outline level. "
+        + "paragraph(add, session_id, text='...', style='Heading 1') appends a paragraph. "
+        + "paragraph(insert, session_id, index=3, text='...') inserts before paragraph 3. "
+        + "paragraph(delete|set-style|set-alignment, session_id, index=3, ...) edits an existing paragraph. "
+        + "Indexes are 1-based and shift after add, insert or delete — re-run list before further edits.")]
 public interface IParagraphCommands
 {
     /// <summary>

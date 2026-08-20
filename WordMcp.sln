@@ -17,6 +17,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordMcp.Core.Tests", "tests
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordMcp.McpServer.Tests", "tests\WordMcp.McpServer.Tests\WordMcp.McpServer.Tests.csproj", "{89BD15E5-5A29-4373-A1A4-1054ABBC48DB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WordMcp.Generators.Mcp", "src\WordMcp.Generators.Mcp\WordMcp.Generators.Mcp.csproj", "{D26E4401-3E22-410F-9D87-24E70839954F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -87,6 +89,18 @@ Global
 		{89BD15E5-5A29-4373-A1A4-1054ABBC48DB}.Release|x64.Build.0 = Release|Any CPU
 		{89BD15E5-5A29-4373-A1A4-1054ABBC48DB}.Release|x86.ActiveCfg = Release|Any CPU
 		{89BD15E5-5A29-4373-A1A4-1054ABBC48DB}.Release|x86.Build.0 = Release|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Debug|x64.Build.0 = Debug|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Debug|x86.Build.0 = Debug|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Release|x64.ActiveCfg = Release|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Release|x64.Build.0 = Release|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Release|x86.ActiveCfg = Release|Any CPU
+		{D26E4401-3E22-410F-9D87-24E70839954F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -97,5 +111,6 @@ Global
 		{AF56C61E-48C8-4081-BDAE-10A51D02BE8D} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{A6D39EE2-2B46-445D-BF1E-36AE3D85AC1F} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{89BD15E5-5A29-4373-A1A4-1054ABBC48DB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{D26E4401-3E22-410F-9D87-24E70839954F} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal

@@ -16,7 +16,15 @@ namespace WordMcp.Core.Commands.HeaderFooter;
 [ServiceCategory("headerFooter", "HeaderFooter")]
 [McpTool("header-footer",
     Title = "Header and Footer Operations",
-    Description = "Read, write and clear headers and footers per section and page type.")]
+    Description = "Header and footer operations on an open document. Headers belong to a SECTION, "
+        + "not to the document, so use section(list) first when a document has more than one. "
+        + "header-footer(set, session_id, kind='footer', text='Confidential') writes the same text "
+        + "to every section; pass section_index to target one. "
+        + "type='first-page' or 'even-pages' switches the matching section option on automatically, "
+        + "because Word otherwise stores the text without ever showing it. "
+        + "Writing to a section whose header is inherited from the previous one breaks that link. "
+        + "header-footer(get, session_id, kind='header') reads the text back. "
+        + "For page numbers use field(insert-page-number) instead, which inserts live fields.")]
 public interface IHeaderFooterCommands
 {
     /// <summary>

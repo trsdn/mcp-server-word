@@ -11,6 +11,10 @@
     <!-- CA1707: MCP tool parameters use snake_case by protocol convention -->
     <NoWarn>$(NoWarn);CS1591;CA1707</NoWarn>
 
+    <!-- Write the generated tool classes to disk so they can be reviewed in a diff -->
+    <EmitCompilerGeneratedFiles>true</EmitCompilerGeneratedFiles>
+    <CompilerGeneratedFilesOutputPath>$(BaseIntermediateOutputPath)generated</CompilerGeneratedFilesOutputPath>
+
     <PackageId>WordMcp.McpServer</PackageId>
     <Title>MCP Server for Word</Title>
     <Description>Microsoft Word automation for AI assistants - manage documents, text, paragraphs and tables. Requires Word to be installed. Only runs on Windows.</Description>
@@ -51,6 +55,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WordMcp.Core\WordMcp.Core.csproj" />
+    <ProjectReference Include="..\WordMcp.Generators.Mcp\WordMcp.Generators.Mcp.csproj"
+                      OutputItemType="Analyzer"
+                      ReferenceOutputAssembly="false" />
   </ItemGroup>
 
   <ItemGroup>
