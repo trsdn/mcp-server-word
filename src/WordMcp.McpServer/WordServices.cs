@@ -1,11 +1,13 @@
 using Microsoft.Extensions.Logging;
 using WordMcp.ComInterop.Session;
 using WordMcp.Core.Commands.Document;
+using WordMcp.Core.Commands.Comment;
 using WordMcp.Core.Commands.Field;
 using WordMcp.Core.Commands.HeaderFooter;
 using WordMcp.Core.Commands.Image;
 using WordMcp.Core.Commands.List;
 using WordMcp.Core.Commands.Paragraph;
+using WordMcp.Core.Commands.Revision;
 using WordMcp.Core.Commands.Section;
 using WordMcp.Core.Commands.Style;
 using WordMcp.Core.Commands.Table;
@@ -69,6 +71,12 @@ internal static class WordServices
 
     /// <summary>Gets the list command implementation.</summary>
     public static IListCommands Lists { get; } = new ListCommands();
+
+    /// <summary>Gets the comment command implementation.</summary>
+    public static ICommentCommands Comments { get; } = new CommentCommands();
+
+    /// <summary>Gets the revision command implementation.</summary>
+    public static IRevisionCommands Revisions { get; } = new RevisionCommands();
 
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.

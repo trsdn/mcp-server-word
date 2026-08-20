@@ -271,6 +271,46 @@ public static class ComInteropConstants
 
     #endregion
 
+    #region Revisions
+
+    /// <summary>WdRevisionType.wdNoRevision = 0.</summary>
+    public const int WdNoRevision = 0;
+
+    /// <summary>WdRevisionType.wdRevisionInsert = 1.</summary>
+    public const int WdRevisionInsert = 1;
+
+    /// <summary>WdRevisionType.wdRevisionDelete = 2.</summary>
+    public const int WdRevisionDelete = 2;
+
+    /// <summary>WdRevisionType.wdRevisionProperty = 3.</summary>
+    public const int WdRevisionProperty = 3;
+
+    /// <summary>WdRevisionType.wdRevisionStyle = 8.</summary>
+    public const int WdRevisionStyle = 8;
+
+    /// <summary>WdRevisionType.wdRevisionReplace = 9.</summary>
+    public const int WdRevisionReplace = 9;
+
+    /// <summary>WdRevisionType.wdRevisionParagraphProperty = 10.</summary>
+    public const int WdRevisionParagraphProperty = 10;
+
+    /// <summary>WdRevisionType.wdRevisionTableProperty = 11.</summary>
+    public const int WdRevisionTableProperty = 11;
+
+    /// <summary>WdRevisionType.wdRevisionSectionProperty = 12.</summary>
+    public const int WdRevisionSectionProperty = 12;
+
+    /// <summary>WdRevisionType.wdRevisionStyleDefinition = 13.</summary>
+    public const int WdRevisionStyleDefinition = 13;
+
+    /// <summary>WdRevisionType.wdRevisionMovedFrom = 14.</summary>
+    public const int WdRevisionMovedFrom = 14;
+
+    /// <summary>WdRevisionType.wdRevisionMovedTo = 15.</summary>
+    public const int WdRevisionMovedTo = 15;
+
+    #endregion
+
     #region Supported extensions
 
     /// <summary>
