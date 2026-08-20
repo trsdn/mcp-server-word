@@ -111,6 +111,10 @@ Starting it by hand is rarely necessary — a client configured to use it starts
 pipe it listens on embeds your SID and is ACL'd to it, so sessions are never shared between
 accounts. It exits on its own once no session has been open for the idle timeout.
 
+To use it, set `WORDMCP_SERVICE_MODE=daemon` for the MCP server. Every tool call then travels to
+the daemon instead of running in the server's own process. Without it the server keeps sessions to
+itself, which is what a single client wants: no second process and no startup wait.
+
 ---
 
 ## Tools

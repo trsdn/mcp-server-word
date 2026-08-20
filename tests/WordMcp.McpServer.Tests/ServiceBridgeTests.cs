@@ -192,10 +192,25 @@ public class ServiceBridgeTests
     }
 
     [Fact]
-    public void ABatchStillNeedsASessionId()
+    public void AToolCommandStillNeedsASessionId()
     {
-        var ex = Assert.Throws<ArgumentException>(() => WordToolsBase.Batch(null));
+        var json = WordTextTool.Text(WordTextAction.Get, session_id: string.Empty);
+        using var document = JsonDocument.Parse(json);
 
-        Assert.Contains("session_id", ex.Message, StringComparison.Ordinal);
+        Assert.False(document.RootElement.GetProperty("success").GetBoolean());
+        Assert.Contains(
+            "session_id",
+            document.RootElement.GetProperty("errorMessage").GetString(),
+            StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void AToolCommandReportsAnUnknownSession()
+    {
+        var json = WordTextTool.Text(WordTextAction.Get, session_id: "word-doesnotexist");
+        using var document = JsonDocument.Parse(json);
+
+        Assert.False(document.RootElement.GetProperty("success").GetBoolean());
+        Assert.Equal("KeyNotFoundException", document.RootElement.GetProperty("errorType").GetString());
     }
 }
