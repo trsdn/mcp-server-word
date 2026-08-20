@@ -416,6 +416,15 @@ fails the build rather than reaching a client.
 
 Tests that need a real Word installation are marked `[Trait("Category", "RequiresWord")]` and are excluded in CI. Failed integration runs can leave orphaned `WINWORD.EXE` processes behind, which slow down or block later runs — clean them up with `Get-Process WINWORD | Stop-Process -Force` before re-running.
 
+### Further reading
+
+| Document | Covers |
+|---|---|
+| [docs/architecture.md](docs/architecture.md) | The layers, the request flow and how the tool layer is generated |
+| [docs/com-interop.md](docs/com-interop.md) | STA threading, releasing COM objects and the Word behaviour behind the pitfalls above |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Building, testing, adding a tool, cutting a release |
+| [skills/word-mcp/SKILL.md](skills/word-mcp/SKILL.md) | An agent-facing guide to using the tools in the right order |
+
 ## Troubleshooting
 
 | Symptom | Cause and fix |
