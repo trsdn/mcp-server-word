@@ -328,6 +328,28 @@ public static class WordConversions
         _ => "other"
     };
 
+    /// <summary>
+    /// Converts a <c>WdRevisionType</c> value to its friendly name.
+    /// </summary>
+    /// <param name="wdRevisionType">The Word revision type constant.</param>
+    /// <returns>The friendly change kind name.</returns>
+    public static string FromWdRevisionType(int wdRevisionType) => wdRevisionType switch
+    {
+        ComInteropConstants.WdNoRevision => "none",
+        ComInteropConstants.WdRevisionInsert => "insert",
+        ComInteropConstants.WdRevisionDelete => "delete",
+        ComInteropConstants.WdRevisionReplace => "replace",
+        ComInteropConstants.WdRevisionMovedFrom => "moved-from",
+        ComInteropConstants.WdRevisionMovedTo => "moved-to",
+        ComInteropConstants.WdRevisionProperty
+            or ComInteropConstants.WdRevisionStyle
+            or ComInteropConstants.WdRevisionParagraphProperty
+            or ComInteropConstants.WdRevisionTableProperty
+            or ComInteropConstants.WdRevisionSectionProperty
+            or ComInteropConstants.WdRevisionStyleDefinition => "format",
+        _ => "other"
+    };
+
     private static string NormalizeName(string value)
         => value.Trim().ToLowerInvariant().Replace('_', '-').Replace(" ", string.Empty, StringComparison.Ordinal);
 }

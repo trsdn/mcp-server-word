@@ -85,7 +85,7 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 
 ## Tools
 
-Eleven tools, each with an `action` parameter.
+Thirteen tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -229,6 +229,44 @@ list(action: "restart", session_id: "...", start_index: 6)
 
 ---
 
+### `comment` — review notes
+
+| Action | Purpose |
+|---|---|
+| `list` | List the comments with author, date, text and the commented-on text |
+| `add` | Attach a comment to a paragraph or to a phrase inside it |
+| `resolve` | Mark a comment as done, or reopen it |
+| `delete` | Remove a comment |
+
+`add` comments the whole paragraph unless `anchor_text` names a phrase inside it. Indexes shift
+after `delete`, so list again before deleting a second comment.
+
+```jsonc
+comment(action: "add", session_id: "...", paragraph_index: 4,
+        text: "Source?", anchor_text: "fifteen percent")
+comment(action: "list", session_id: "...", unresolved_only: true)
+```
+
+---
+
+### `revision` — tracked changes
+
+| Action | Purpose |
+|---|---|
+| `list` | List the tracked changes and report whether tracking is on |
+| `accept` | Accept one revision, or all of them |
+| `reject` | Reject one revision, or all of them |
+| `set-tracking` | Turn change tracking on or off |
+
+Omitting `index` on `accept`/`reject` handles the whole document, headers and footers included.
+
+```jsonc
+revision(action: "set-tracking", session_id: "...", enabled: true)
+revision(action: "accept", session_id: "...")
+```
+
+---
+
 ## Responses
 
 Every tool returns JSON. Failures are reported as structured payloads, never as a transport error:
@@ -268,6 +306,10 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **`first-page` and `even-pages` headers need a section switch.** `header-footer(set)` turns on `DifferentFirstPage` respectively `DifferentOddEvenPages` for you — without it Word stores the text but never renders it.
 * **`list(apply)` starts a new list by default.** `continue_previous_list` is off, because picking up the numbering of an unrelated earlier list is rarely what was meant. Two numbered lists separated by plain paragraphs stay independent; use `list(restart)` when Word merges them anyway.
 * **Only outline-number lists render distinct levels.** `list(set-level)` works on any list, but a plain `bullet` or `number` list shows the same marker on every level — the paragraphs are merely indented.
+* **`comment(resolve)` often fails on Microsoft 365.** Word's modern comments treat every comment added through the API as an unposted draft, and a draft cannot be marked as done. The server reports that as a clear message; delete the comment instead. `comment(list)` returns `resolved: null` on installations that do not expose the state at all.
+* **Comment and revision indexes shift.** Deleting a comment or accepting a single revision renumbers everything after it, so run `list` again between two such calls instead of reusing the old indexes.
+* **`revision(accept|reject)` without an index also walks headers and footers.** Word's `Document.AcceptAllRevisions()` covers the body only, the same gap as with `field(update-all)`.
+* **Tracked changes are recorded only while tracking is on.** `revision(set-tracking)` does not apply retroactively — turn it on before the edits you want recorded.
 
 ---
 
@@ -288,13 +330,13 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 | `src/WordMcp.Core` | Command interfaces, command implementations and result models |
 | `src/WordMcp.Generators.Shared` | Source files shared by the generators; not a project of its own |
 | `src/WordMcp.Generators.Mcp` | Roslyn source generator that emits the MCP tool classes |
-| `src/WordMcp.McpServer` | stdio MCP server exposing the eleven tools |
+| `src/WordMcp.McpServer` | stdio MCP server exposing the thirteen tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 
 ### Generated tool layer
 
-Ten of the eleven tools are generated at build time. The command interfaces in
+Twelve of the thirteen tools are generated at build time. The command interfaces in
 `src/WordMcp.Core/Commands` are the single source of truth for the wire contract:
 
 - `[ServiceCategory("section", "Section")]` names the tool class, `WordSectionTool`.
