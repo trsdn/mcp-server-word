@@ -200,6 +200,25 @@ public static class ComInteropConstants
 
     #endregion
 
+    #region Styles
+
+    /// <summary>WdStyleType.wdStyleTypeParagraph = 1.</summary>
+    public const int WdStyleTypeParagraph = 1;
+
+    /// <summary>WdStyleType.wdStyleTypeCharacter = 2.</summary>
+    public const int WdStyleTypeCharacter = 2;
+
+    /// <summary>WdStyleType.wdStyleTypeTable = 3.</summary>
+    public const int WdStyleTypeTable = 3;
+
+    /// <summary>WdStyleType.wdStyleTypeList = 4.</summary>
+    public const int WdStyleTypeList = 4;
+
+    /// <summary>WdLineSpacing.wdLineSpaceExactly = 4, used when line spacing is given in points.</summary>
+    public const int WdLineSpaceExactly = 4;
+
+    #endregion
+
     #region Supported extensions
 
     /// <summary>

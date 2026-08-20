@@ -257,6 +257,42 @@ public static class WordConversions
         _ => "other"
     };
 
+    /// <summary>
+    /// Converts a style kind name to the matching <c>WdStyleType</c> value.
+    /// </summary>
+    /// <param name="styleType">One of <c>paragraph</c>, <c>character</c>, <c>table</c> or <c>list</c>.</param>
+    /// <returns>The Word style type constant.</returns>
+    /// <exception cref="ArgumentException">The style kind is unknown.</exception>
+    public static int ToWdStyleType(string styleType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(styleType);
+
+        return NormalizeName(styleType) switch
+        {
+            "paragraph" => ComInteropConstants.WdStyleTypeParagraph,
+            "character" => ComInteropConstants.WdStyleTypeCharacter,
+            "table" => ComInteropConstants.WdStyleTypeTable,
+            "list" => ComInteropConstants.WdStyleTypeList,
+            _ => throw new ArgumentException(
+                $"Unknown style type '{styleType}'. Use one of: paragraph, character, table, list.",
+                nameof(styleType))
+        };
+    }
+
+    /// <summary>
+    /// Converts a <c>WdStyleType</c> value to its friendly name.
+    /// </summary>
+    /// <param name="wdStyleType">The Word style type constant.</param>
+    /// <returns>The friendly style kind name.</returns>
+    public static string FromWdStyleType(int wdStyleType) => wdStyleType switch
+    {
+        ComInteropConstants.WdStyleTypeParagraph => "paragraph",
+        ComInteropConstants.WdStyleTypeCharacter => "character",
+        ComInteropConstants.WdStyleTypeTable => "table",
+        ComInteropConstants.WdStyleTypeList => "list",
+        _ => "other"
+    };
+
     private static string NormalizeName(string value)
         => value.Trim().ToLowerInvariant().Replace('_', '-').Replace(" ", string.Empty, StringComparison.Ordinal);
 }

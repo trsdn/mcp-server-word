@@ -85,7 +85,7 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 
 ## Tools
 
-Nine tools, each with an `action` parameter.
+Ten tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -189,6 +189,24 @@ Paragraph indices are **1-based**, matching Word.
 
 `kind` selects `header` or `footer`, `type` selects `primary`, `first-page` or `even-pages`.
 
+### `style` — styles
+
+| Action | Purpose |
+|---|---|
+| `list` | List styles; by default only the ones the document uses |
+| `create` | Add a custom style, optionally based on an existing one |
+| `modify` | Change font and paragraph formatting of a style |
+| `delete` | Remove a custom style |
+
+`style_type` selects `paragraph`, `character`, `table` or `list`. Pass `in_use_only: false` to
+`list` for the full set, which is over 370 entries on a localized Word.
+
+```jsonc
+style(action: "create", session_id: "...", name: "Callout", base_style: "Normal")
+style(action: "modify", session_id: "...", name: "Callout",
+      font_size: 11, bold: true, color: "#C00000", space_after: 12)
+```
+
 ---
 
 ## Responses
@@ -215,7 +233,8 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **Rights-protected documents** (IRM/AIP) are rejected before Word is launched.
 * **A document open in Word blocks the session** — close it first.
 * **Word dialogs stall automation.** If a call times out, check for an open dialog on the desktop.
-* **Style names are English.** Built-in styles (`Heading 1`, `Title`, `Table Grid`, …) are translated to Word's language-independent style ids, so they work on localized installations. Any other name is passed to Word as-is, which is how custom and localized styles are addressed. Note that Word *reports* styles under their localized name (`Überschrift 1` on a German install).
+* **Style names are English.** Built-in styles (`Heading 1`, `Title`, `Table Grid`, …) are translated to Word's language-independent style ids, so they work on localized installations. Any other name is passed to Word as-is, which is how custom and localized styles are addressed. Note that Word *reports* styles under their localized name (`Überschrift 1` on a German install), which is why `style(list)` returns both `name` and `english_name` — send `english_name` back when it is present.
+* **Built-in styles cannot be deleted.** `style(delete)` rejects them with a clear message instead of passing Word's generic COM error through. A custom style that is still applied to a paragraph cannot be deleted either; set those paragraphs to another style first.
 * **New documents are written directly, not via Word.** `file(create)` writes an empty `.docx`/`.docm` package itself and then opens it. Creating documents through Word instead is unreliable on machines signed in to Microsoft 365, because AutoSave claims the new document for OneDrive and silently ignores the requested local path.
 * **Merged table cells** are returned as empty strings by `table(read)`.
 * **Image sizes are in points, not pixels** (72 pt = 1 inch). `image(insert)` and `image(resize)` keep the aspect ratio unless `lock_aspect_ratio` is set to `false`, so passing only `width` scales the height along with it.
@@ -247,13 +266,13 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 | `src/WordMcp.Core` | Command interfaces, command implementations and result models |
 | `src/WordMcp.Generators.Shared` | Source files shared by the generators; not a project of its own |
 | `src/WordMcp.Generators.Mcp` | Roslyn source generator that emits the MCP tool classes |
-| `src/WordMcp.McpServer` | stdio MCP server exposing the nine tools |
+| `src/WordMcp.McpServer` | stdio MCP server exposing the ten tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 
 ### Generated tool layer
 
-Eight of the nine tools are generated at build time. The command interfaces in
+Nine of the ten tools are generated at build time. The command interfaces in
 `src/WordMcp.Core/Commands` are the single source of truth for the wire contract:
 
 - `[ServiceCategory("section", "Section")]` names the tool class, `WordSectionTool`.

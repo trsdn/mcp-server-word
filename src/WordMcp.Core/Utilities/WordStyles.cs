@@ -41,6 +41,15 @@ public static class WordStyles
         };
 
     /// <summary>
+    /// Gets the English built-in style names and their <c>WdBuiltinStyle</c> constants.
+    /// </summary>
+    /// <remarks>
+    /// Useful to map back from a localized name: asking Word for each constant yields the local
+    /// name, which pairs it with the English name a client should send.
+    /// </remarks>
+    public static IReadOnlyDictionary<string, int> KnownBuiltInStyles => BuiltInStyles;
+
+    /// <summary>
     /// Converts a style name into the value to assign to a Word <c>Style</c> property.
     /// </summary>
     /// <param name="styleName">Style name as supplied by the caller.</param>
