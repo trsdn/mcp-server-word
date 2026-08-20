@@ -141,6 +141,63 @@ public static class ComInteropConstants
     /// <summary>WdCaptionPosition.wdCaptionPositionBelow = 1.</summary>
     public const int WdCaptionPositionBelow = 1;
 
+    /// <summary>WdHeaderFooterIndex.wdHeaderFooterFirstPage = 2.</summary>
+    public const int WdHeaderFooterFirstPage = 2;
+
+    /// <summary>WdHeaderFooterIndex.wdHeaderFooterEvenPages = 3.</summary>
+    public const int WdHeaderFooterEvenPages = 3;
+
+    /// <summary>WdSectionStart.wdSectionContinuous = 0.</summary>
+    public const int WdSectionContinuous = 0;
+
+    /// <summary>WdSectionStart.wdSectionNewColumn = 1.</summary>
+    public const int WdSectionNewColumn = 1;
+
+    /// <summary>WdSectionStart.wdSectionNewPage = 2.</summary>
+    public const int WdSectionNewPage = 2;
+
+    /// <summary>WdSectionStart.wdSectionEvenPage = 3.</summary>
+    public const int WdSectionEvenPage = 3;
+
+    /// <summary>WdSectionStart.wdSectionOddPage = 4.</summary>
+    public const int WdSectionOddPage = 4;
+
+    /// <summary>WdBreakType.wdSectionBreakNextPage = 2.</summary>
+    public const int WdSectionBreakNextPage = 2;
+
+    /// <summary>WdBreakType.wdSectionBreakContinuous = 3.</summary>
+    public const int WdSectionBreakContinuous = 3;
+
+    /// <summary>WdBreakType.wdSectionBreakEvenPage = 4.</summary>
+    public const int WdSectionBreakEvenPage = 4;
+
+    /// <summary>WdBreakType.wdSectionBreakOddPage = 5.</summary>
+    public const int WdSectionBreakOddPage = 5;
+
+    /// <summary>WdOrientation.wdOrientPortrait = 0.</summary>
+    public const int WdOrientPortrait = 0;
+
+    /// <summary>WdOrientation.wdOrientLandscape = 1.</summary>
+    public const int WdOrientLandscape = 1;
+
+    /// <summary>WdPaperSize.wdPaperA4 = 7.</summary>
+    public const int WdPaperA4 = 7;
+
+    /// <summary>WdPaperSize.wdPaperA3 = 6.</summary>
+    public const int WdPaperA3 = 6;
+
+    /// <summary>WdPaperSize.wdPaperA5 = 8.</summary>
+    public const int WdPaperA5 = 8;
+
+    /// <summary>WdPaperSize.wdPaperLetter = 2.</summary>
+    public const int WdPaperLetter = 2;
+
+    /// <summary>WdPaperSize.wdPaperLegal = 5.</summary>
+    public const int WdPaperLegal = 5;
+
+    /// <summary>WdPaperSize.wdPaperTabloid = 16.</summary>
+    public const int WdPaperTabloid = 16;
+
     #endregion
 
     #region Supported extensions

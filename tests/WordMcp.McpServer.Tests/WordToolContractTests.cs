@@ -14,7 +14,9 @@ public class WordToolContractTests
     public static TheoryData<Type> ActionEnums =>
     [
         typeof(WordImageAction),
-        typeof(WordFieldAction)
+        typeof(WordFieldAction),
+        typeof(WordSectionAction),
+        typeof(WordHeaderFooterAction)
     ];
 
     [Theory]

@@ -1,6 +1,3 @@
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
-using WordMcp.ComInterop.Session;
 using WordMcp.Core.Commands.Field;
 using WordMcp.Core.Commands.Image;
 using Xunit;
@@ -122,35 +119,5 @@ public class ImageAndFieldValidationTests
         string path = Path.Combine(Path.GetTempPath(), "wordmcp-" + Guid.NewGuid().ToString("N") + ".png");
         File.WriteAllBytes(path, [0x89, 0x50, 0x4E, 0x47]);
         return path;
-    }
-
-    /// <summary>
-    /// Stands in for a Word batch. Any call means validation let the request through, which is
-    /// exactly what these tests assert.
-    /// </summary>
-    private sealed class ThrowingBatch : IWordBatch
-    {
-        public string DocumentPath => "fake.docx";
-
-        public ILogger Logger => NullLogger.Instance;
-
-        public TimeSpan OperationTimeout => TimeSpan.FromSeconds(30);
-
-        public int? WordProcessId => null;
-
-        public T Execute<T>(Func<WordContext, CancellationToken, T> operation, CancellationToken cancellationToken = default)
-            => throw new NotSupportedException("Reached the batch.");
-
-        public void Execute(Action<WordContext, CancellationToken> operation, CancellationToken cancellationToken = default)
-            => throw new NotSupportedException("Reached the batch.");
-
-        public void Save(CancellationToken cancellationToken = default)
-            => throw new NotSupportedException("Reached the batch.");
-
-        public bool IsWordProcessAlive() => true;
-
-        public void Dispose()
-        {
-        }
     }
 }

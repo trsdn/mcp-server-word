@@ -2,8 +2,10 @@ using Microsoft.Extensions.Logging;
 using WordMcp.ComInterop.Session;
 using WordMcp.Core.Commands.Document;
 using WordMcp.Core.Commands.Field;
+using WordMcp.Core.Commands.HeaderFooter;
 using WordMcp.Core.Commands.Image;
 using WordMcp.Core.Commands.Paragraph;
+using WordMcp.Core.Commands.Section;
 using WordMcp.Core.Commands.Table;
 using WordMcp.Core.Commands.Text;
 
@@ -53,6 +55,12 @@ internal static class WordServices
 
     /// <summary>Gets the field command implementation.</summary>
     public static IFieldCommands Fields { get; } = new FieldCommands();
+
+    /// <summary>Gets the section command implementation.</summary>
+    public static ISectionCommands Sections { get; } = new SectionCommands();
+
+    /// <summary>Gets the header and footer command implementation.</summary>
+    public static IHeaderFooterCommands HeadersFooters { get; } = new HeaderFooterCommands();
 
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.
