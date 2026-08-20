@@ -1,0 +1,42 @@
+version: 2
+
+updates:
+  - package-ecosystem: nuget
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "deps"
+    groups:
+      # These move together and are pinned against each other in Directory.Packages.props,
+      # so splitting them across PRs only produces builds that cannot restore.
+      microsoft-extensions:
+        patterns:
+          - "Microsoft.Extensions.*"
+      testing:
+        patterns:
+          - "xunit*"
+          - "Microsoft.NET.Test.Sdk"
+          - "coverlet.*"
+    ignore:
+      # The PIA is versioned against the Office release, not semver, and a newer one does not
+      # mean a newer Word. Updating it is a deliberate decision.
+      - dependency-name: "Microsoft.Office.Interop.Word"
+      # Roslyn has to match the analyzer surface the .NET 9 SDK ships; a newer package silently
+      # breaks the source generator at consumer build time.
+      - dependency-name: "Microsoft.CodeAnalysis.CSharp"
+      - dependency-name: "Microsoft.CodeAnalysis.Analyzers"
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Berlin
+    commit-message:
+      prefix: "ci"

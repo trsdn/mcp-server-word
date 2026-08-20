@@ -27,6 +27,20 @@ mcp-word --version
 mcp-word --help
 ```
 
+To update or remove it later:
+
+```powershell
+dotnet tool update --global WordMcp.McpServer
+dotnet tool uninstall --global WordMcp.McpServer
+```
+
+To run an unreleased build instead, pack it locally and install from the output folder:
+
+```powershell
+dotnet pack src\WordMcp.McpServer\WordMcp.McpServer.csproj -c Release -o artifacts
+dotnet tool install --global --add-source .\artifacts WordMcp.McpServer
+```
+
 ## Client configuration
 
 The server speaks **stdio**.
@@ -414,7 +428,8 @@ Tests that need a real Word installation are marked `[Trait("Category", "Require
 ## Contributing
 
 Bug reports and feature requests go through the [issue templates](https://github.com/trsdn/mcp-server-word/issues/new/choose).
-Pull requests are welcome; the checklist in the PR template covers what the build enforces.
+Pull requests are welcome; [CONTRIBUTING.md](CONTRIBUTING.md) covers how to build, how to run the
+two halves of the test suite, and what it takes to add a tool.
 
 Please read the [Code of Conduct](CODE_OF_CONDUCT.md) first.
 

@@ -2,9 +2,9 @@
 
   <PropertyGroup>
     <!-- Common properties for all projects -->
+    <!-- The fallback for local builds. A release overrides it with a Version property taken from
+         the git tag, and AssemblyVersion/FileVersion follow it, so the reported version is honest. -->
     <Version>0.1.0</Version>
-    <AssemblyVersion>0.1.0.0</AssemblyVersion>
-    <FileVersion>0.1.0.0</FileVersion>
     <Authors>Torsten Mahr</Authors>
     <Company>Open Source Developer</Company>
     <Product>WordMcp</Product>
