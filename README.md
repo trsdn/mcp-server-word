@@ -85,7 +85,7 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 
 ## Tools
 
-Thirteen tools, each with an `action` parameter.
+Fourteen tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -267,6 +267,28 @@ revision(action: "accept", session_id: "...")
 
 ---
 
+### `bookmark` — stable references
+
+| Action | Purpose |
+|---|---|
+| `list` | Bookmarks with name, paragraph index and a preview of the marked text |
+| `add` | Bookmark a paragraph, a paragraph range or a phrase inside a paragraph |
+| `get-text` | Read the full bookmarked text |
+| `delete` | Remove a bookmark; the text stays |
+
+Names must start with a letter and may only contain letters, digits and underscores. Bookmarks
+survive edits elsewhere in the document, which makes them the reliable way to refer back to a
+passage once paragraph indexes have shifted.
+
+```jsonc
+bookmark(action: "add", session_id: "...", name: "Intro", paragraph_index: 2)
+bookmark(action: "add", session_id: "...", name: "Growth",
+         paragraph_index: 4, anchor_text: "fifteen percent")
+bookmark(action: "get-text", session_id: "...", name: "Intro")
+```
+
+---
+
 ## Responses
 
 Every tool returns JSON. Failures are reported as structured payloads, never as a transport error:
@@ -310,6 +332,9 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **Comment and revision indexes shift.** Deleting a comment or accepting a single revision renumbers everything after it, so run `list` again between two such calls instead of reusing the old indexes.
 * **`revision(accept|reject)` without an index also walks headers and footers.** Word's `Document.AcceptAllRevisions()` covers the body only, the same gap as with `field(update-all)`.
 * **Tracked changes are recorded only while tracking is on.** `revision(set-tracking)` does not apply retroactively — turn it on before the edits you want recorded.
+* **Bookmark names are restricted by Word.** They must start with a letter, may contain only letters, digits and underscores, and are limited to 40 characters. Spaces, hyphens, dots and non-ASCII letters are rejected before the call reaches Word, which would otherwise fail with a generic COM error.
+* **Bookmarks are the stable way to refer to a passage.** Paragraph indexes shift with every insertion, bookmarks do not. Bookmark a passage once and use `bookmark(get-text)` to re-read it later.
+* **`bookmark(add)` on a paragraph excludes the paragraph mark**, so `get-text` returns the text without a trailing newline. A bookmark over several paragraphs keeps the marks in between.
 
 ---
 
@@ -330,13 +355,13 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 | `src/WordMcp.Core` | Command interfaces, command implementations and result models |
 | `src/WordMcp.Generators.Shared` | Source files shared by the generators; not a project of its own |
 | `src/WordMcp.Generators.Mcp` | Roslyn source generator that emits the MCP tool classes |
-| `src/WordMcp.McpServer` | stdio MCP server exposing the thirteen tools |
+| `src/WordMcp.McpServer` | stdio MCP server exposing the fourteen tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 
 ### Generated tool layer
 
-Twelve of the thirteen tools are generated at build time. The command interfaces in
+Thirteen of the fourteen tools are generated at build time. The command interfaces in
 `src/WordMcp.Core/Commands` are the single source of truth for the wire contract:
 
 - `[ServiceCategory("section", "Section")]` names the tool class, `WordSectionTool`.
