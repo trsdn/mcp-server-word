@@ -6,6 +6,7 @@ using WordMcp.Core.Commands.HeaderFooter;
 using WordMcp.Core.Commands.Image;
 using WordMcp.Core.Commands.Paragraph;
 using WordMcp.Core.Commands.Section;
+using WordMcp.Core.Commands.Style;
 using WordMcp.Core.Commands.Table;
 using WordMcp.Core.Commands.Text;
 
@@ -61,6 +62,9 @@ internal static class WordServices
 
     /// <summary>Gets the header and footer command implementation.</summary>
     public static IHeaderFooterCommands HeadersFooters { get; } = new HeaderFooterCommands();
+
+    /// <summary>Gets the style command implementation.</summary>
+    public static IStyleCommands Styles { get; } = new StyleCommands();
 
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.
