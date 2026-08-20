@@ -78,7 +78,8 @@ public static class Program
                     SESSION LIFECYCLE:
                     1. file(action:'open', path:'C:\\...\\report.docx') -> returns session_id
                        (or file(action:'create', path:...) for a new document)
-                    2. pass session_id to document / text / paragraph / table / image / field
+                    2. pass session_id to document / text / paragraph / table / image / field /
+                       section / header-footer
                     3. file(action:'close', session_id:..., save:true) when completely done
 
                     Paragraph, table and image indexes are 1-based and shift after structural
@@ -86,6 +87,10 @@ public static class Program
 
                     A table of contents only lists paragraphs that use a heading style, so apply
                     'Heading 1'/'Heading 2' before calling field(insert-toc).
+
+                    Headers and footers belong to sections. Without section_index they apply to
+                    every section; with one, the link to the previous section is broken first.
+                    All measurements are in points (1 cm = 28.35 pt).
                     """;
             })
             .WithToolsFromAssembly()

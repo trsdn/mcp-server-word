@@ -85,7 +85,7 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 
 ## Tools
 
-Seven tools, each with an `action` parameter.
+Nine tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -171,6 +171,24 @@ Paragraph indices are **1-based**, matching Word.
 | `update-all` | Update all fields, including those in headers and footers |
 | `insert-page-number` | Add a page number to the header or footer |
 
+### `section` — sections and page setup
+
+| Action | Purpose |
+|---|---|
+| `list` | List all sections with start type, margins, page size and orientation |
+| `add` | Insert a section break (`start_type`: `next-page`, `continuous`, `even-page`, `odd-page`) |
+| `page-setup` | Set margins, `orientation` and `paper_size` for one section or the whole document |
+
+### `header-footer` — headers and footers
+
+| Action | Purpose |
+|---|---|
+| `get` | Read the header or footer of one section or of all sections |
+| `set` | Write text, optionally with an `alignment` |
+| `clear` | Empty the header or footer |
+
+`kind` selects `header` or `footer`, `type` selects `primary`, `first-page` or `even-pages`.
+
 ---
 
 ## Responses
@@ -205,6 +223,10 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **A table of contents only lists heading paragraphs.** `field(insert-toc)` returns `entry_count: 0` for a document without heading styles — apply `Heading 1`/`Heading 2` via `paragraph(add|set-style)` first, then run `field(update-toc)`.
 * **`field(update-all)` also walks headers and footers.** Word's `Document.Fields` covers the body only, which is why page numbers would otherwise never refresh.
 * **`image(insert)` with a caption uses Word's caption numbering**, so the caption reads `Figure 1 <your text>` (localized on non-English installations) and participates in a table of figures.
+* **All measurements are in points**, including page margins (1 cm = 28.35 pt, 1 inch = 72 pt).
+* **`section(page-setup)` applies `paper_size` before the margins**, because changing the paper size resets them in Word. Without a `section_index` the setup is applied to every section.
+* **Headers and footers are inherited between sections.** A new section shows the previous section's header until something is written to it. `header-footer(set)` with a `section_index` breaks that link automatically, so section 1 keeps its own text.
+* **`first-page` and `even-pages` headers need a section switch.** `header-footer(set)` turns on `DifferentFirstPage` respectively `DifferentOddEvenPages` for you — without it Word stores the text but never renders it.
 
 ---
 
@@ -223,7 +245,7 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 |---|---|
 | `src/WordMcp.ComInterop` | Word COM lifecycle: STA threading, sessions, OLE message filter, file validation |
 | `src/WordMcp.Core` | Command implementations and result models |
-| `src/WordMcp.McpServer` | stdio MCP server exposing the seven tools |
+| `src/WordMcp.McpServer` | stdio MCP server exposing the nine tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 

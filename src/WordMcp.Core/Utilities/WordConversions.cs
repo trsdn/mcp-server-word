@@ -103,4 +103,160 @@ public static class WordConversions
         // Word stores colours as BGR, not RGB.
         return (b << 16) | (g << 8) | r;
     }
+
+    /// <summary>
+    /// Converts an orientation name to the matching <c>WdOrientation</c> value.
+    /// </summary>
+    /// <param name="orientation">Either <c>portrait</c> or <c>landscape</c>.</param>
+    /// <returns>The Word orientation constant.</returns>
+    /// <exception cref="ArgumentException">The orientation name is unknown.</exception>
+    public static int ToWdOrientation(string orientation)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(orientation);
+
+        return orientation.Trim().ToLowerInvariant() switch
+        {
+            "portrait" or "vertical" => ComInteropConstants.WdOrientPortrait,
+            "landscape" or "horizontal" => ComInteropConstants.WdOrientLandscape,
+            _ => throw new ArgumentException(
+                $"Unknown orientation '{orientation}'. Use portrait or landscape.", nameof(orientation))
+        };
+    }
+
+    /// <summary>
+    /// Converts a <c>WdOrientation</c> value to its friendly name.
+    /// </summary>
+    /// <param name="wdOrientation">The Word orientation constant.</param>
+    /// <returns>The friendly orientation name.</returns>
+    public static string FromWdOrientation(int wdOrientation) => wdOrientation switch
+    {
+        ComInteropConstants.WdOrientPortrait => "portrait",
+        ComInteropConstants.WdOrientLandscape => "landscape",
+        _ => "other"
+    };
+
+    /// <summary>
+    /// Converts a paper size name to the matching <c>WdPaperSize</c> value.
+    /// </summary>
+    /// <param name="paperSize">A name such as <c>a4</c>, <c>letter</c> or <c>legal</c>.</param>
+    /// <returns>The Word paper size constant.</returns>
+    /// <exception cref="ArgumentException">The paper size name is unknown.</exception>
+    public static int ToWdPaperSize(string paperSize)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(paperSize);
+
+        return paperSize.Trim().ToLowerInvariant().Replace(" ", string.Empty, StringComparison.Ordinal) switch
+        {
+            "a3" => ComInteropConstants.WdPaperA3,
+            "a4" => ComInteropConstants.WdPaperA4,
+            "a5" => ComInteropConstants.WdPaperA5,
+            "letter" => ComInteropConstants.WdPaperLetter,
+            "legal" => ComInteropConstants.WdPaperLegal,
+            "tabloid" => ComInteropConstants.WdPaperTabloid,
+            _ => throw new ArgumentException(
+                $"Unknown paper size '{paperSize}'. Use one of: a3, a4, a5, letter, legal, tabloid.",
+                nameof(paperSize))
+        };
+    }
+
+    /// <summary>
+    /// Converts a section start name to the matching <c>WdSectionStart</c> value.
+    /// </summary>
+    /// <param name="startType">
+    /// One of <c>next-page</c>, <c>continuous</c>, <c>even-page</c>, <c>odd-page</c> or
+    /// <c>new-column</c>.
+    /// </param>
+    /// <returns>The Word section start constant.</returns>
+    /// <exception cref="ArgumentException">The section start name is unknown.</exception>
+    public static int ToWdSectionStart(string startType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(startType);
+
+        return NormalizeName(startType) switch
+        {
+            "next-page" or "nextpage" or "page" => ComInteropConstants.WdSectionNewPage,
+            "continuous" => ComInteropConstants.WdSectionContinuous,
+            "even-page" or "evenpage" => ComInteropConstants.WdSectionEvenPage,
+            "odd-page" or "oddpage" => ComInteropConstants.WdSectionOddPage,
+            "new-column" or "newcolumn" or "column" => ComInteropConstants.WdSectionNewColumn,
+            _ => throw new ArgumentException(
+                $"Unknown section start '{startType}'. Use one of: next-page, continuous, even-page, "
+                + "odd-page, new-column.",
+                nameof(startType))
+        };
+    }
+
+    /// <summary>
+    /// Converts a <c>WdSectionStart</c> value to its friendly name.
+    /// </summary>
+    /// <param name="wdSectionStart">The Word section start constant.</param>
+    /// <returns>The friendly section start name.</returns>
+    public static string FromWdSectionStart(int wdSectionStart) => wdSectionStart switch
+    {
+        ComInteropConstants.WdSectionContinuous => "continuous",
+        ComInteropConstants.WdSectionNewColumn => "new-column",
+        ComInteropConstants.WdSectionNewPage => "next-page",
+        ComInteropConstants.WdSectionEvenPage => "even-page",
+        ComInteropConstants.WdSectionOddPage => "odd-page",
+        _ => "other"
+    };
+
+    /// <summary>
+    /// Converts a section start name to the <c>WdBreakType</c> used when inserting the break.
+    /// </summary>
+    /// <param name="startType">Same values as <see cref="ToWdSectionStart"/>, except new-column.</param>
+    /// <returns>The Word break type constant.</returns>
+    /// <exception cref="ArgumentException">The section start name is unknown here.</exception>
+    public static int ToWdSectionBreak(string startType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(startType);
+
+        return NormalizeName(startType) switch
+        {
+            "next-page" or "nextpage" or "page" => ComInteropConstants.WdSectionBreakNextPage,
+            "continuous" => ComInteropConstants.WdSectionBreakContinuous,
+            "even-page" or "evenpage" => ComInteropConstants.WdSectionBreakEvenPage,
+            "odd-page" or "oddpage" => ComInteropConstants.WdSectionBreakOddPage,
+            _ => throw new ArgumentException(
+                $"Unknown section break '{startType}'. Use one of: next-page, continuous, even-page, odd-page.",
+                nameof(startType))
+        };
+    }
+
+    /// <summary>
+    /// Converts a header or footer type name to the matching <c>WdHeaderFooterIndex</c> value.
+    /// </summary>
+    /// <param name="type">One of <c>primary</c>, <c>first-page</c> or <c>even-pages</c>.</param>
+    /// <returns>The Word header/footer index constant.</returns>
+    /// <exception cref="ArgumentException">The type name is unknown.</exception>
+    public static int ToWdHeaderFooterIndex(string type)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(type);
+
+        return NormalizeName(type) switch
+        {
+            "primary" or "default" or "main" => ComInteropConstants.WdHeaderFooterPrimary,
+            "first-page" or "firstpage" or "first" => ComInteropConstants.WdHeaderFooterFirstPage,
+            "even-pages" or "evenpages" or "even" => ComInteropConstants.WdHeaderFooterEvenPages,
+            _ => throw new ArgumentException(
+                $"Unknown header/footer type '{type}'. Use one of: primary, first-page, even-pages.",
+                nameof(type))
+        };
+    }
+
+    /// <summary>
+    /// Converts a <c>WdHeaderFooterIndex</c> value to its friendly name.
+    /// </summary>
+    /// <param name="wdHeaderFooterIndex">The Word header/footer index constant.</param>
+    /// <returns>The friendly type name.</returns>
+    public static string FromWdHeaderFooterIndex(int wdHeaderFooterIndex) => wdHeaderFooterIndex switch
+    {
+        ComInteropConstants.WdHeaderFooterPrimary => "primary",
+        ComInteropConstants.WdHeaderFooterFirstPage => "first-page",
+        ComInteropConstants.WdHeaderFooterEvenPages => "even-pages",
+        _ => "other"
+    };
+
+    private static string NormalizeName(string value)
+        => value.Trim().ToLowerInvariant().Replace('_', '-').Replace(" ", string.Empty, StringComparison.Ordinal);
 }
