@@ -3,6 +3,7 @@ using WordMcp.ComInterop.Session;
 using WordMcp.Core.Commands.Document;
 using WordMcp.Core.Commands.Bookmark;
 using WordMcp.Core.Commands.Comment;
+using WordMcp.Core.Commands.Screenshot;
 using WordMcp.Core.Commands.Field;
 using WordMcp.Core.Commands.HeaderFooter;
 using WordMcp.Core.Commands.Image;
@@ -81,6 +82,9 @@ internal static class WordServices
 
     /// <summary>Gets the bookmark command implementation.</summary>
     public static IBookmarkCommands Bookmarks { get; } = new BookmarkCommands();
+
+    /// <summary>Gets the screenshot command implementation.</summary>
+    public static IScreenshotCommands Screenshots { get; } = new ScreenshotCommands();
 
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.

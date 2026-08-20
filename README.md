@@ -85,7 +85,7 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 
 ## Tools
 
-Fourteen tools, each with an `action` parameter.
+Fifteen tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -289,6 +289,27 @@ bookmark(action: "get-text", session_id: "...", name: "Intro")
 
 ---
 
+### `screenshot` — see the page
+
+| Action | Purpose |
+|---|---|
+| `page` | Render a page as a PNG |
+
+Layout questions — page breaks, table widths, image placement, header positions — are far easier
+to answer from the rendered page than from measurements. The PNG is written to a file and the path
+returned; `include_image: true` additionally returns it inline as base64, which is only worth the
+context when the image is going to be looked at.
+
+`dpi` defaults to 150. Use 96 for a quick layout check and 300 for something close to print.
+
+```jsonc
+screenshot(action: "page", session_id: "...", page: 2)
+screenshot(action: "page", session_id: "...", page: 1,
+           output_path: "C:/temp/page1.png", dpi: 300, include_image: true)
+```
+
+---
+
 ## Responses
 
 Every tool returns JSON. Failures are reported as structured payloads, never as a transport error:
@@ -335,6 +356,8 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **Bookmark names are restricted by Word.** They must start with a letter, may contain only letters, digits and underscores, and are limited to 40 characters. Spaces, hyphens, dots and non-ASCII letters are rejected before the call reaches Word, which would otherwise fail with a generic COM error.
 * **Bookmarks are the stable way to refer to a passage.** Paragraph indexes shift with every insertion, bookmarks do not. Bookmark a passage once and use `bookmark(get-text)` to re-read it later.
 * **`bookmark(add)` on a paragraph excludes the paragraph mark**, so `get-text` returns the text without a trailing newline. A bookmark over several paragraphs keeps the marks in between.
+* **`screenshot(page)` renders through a PDF.** Word has no API that returns a page as an image, so the server exports the single page with `ExportAsFixedFormat` and rasterizes it. Unsaved changes are included, and the temporary PDF is deleted afterwards.
+* **Page numbers come from a fresh repagination.** A document that was only ever edited through automation reports a stale page count, so `screenshot` repaginates first. That also means the page count reflects the current layout, not the one at open time.
 
 ---
 
@@ -355,13 +378,13 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 | `src/WordMcp.Core` | Command interfaces, command implementations and result models |
 | `src/WordMcp.Generators.Shared` | Source files shared by the generators; not a project of its own |
 | `src/WordMcp.Generators.Mcp` | Roslyn source generator that emits the MCP tool classes |
-| `src/WordMcp.McpServer` | stdio MCP server exposing the fourteen tools |
+| `src/WordMcp.McpServer` | stdio MCP server exposing the fifteen tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 
 ### Generated tool layer
 
-Thirteen of the fourteen tools are generated at build time. The command interfaces in
+Fourteen of the fifteen tools are generated at build time. The command interfaces in
 `src/WordMcp.Core/Commands` are the single source of truth for the wire contract:
 
 - `[ServiceCategory("section", "Section")]` names the tool class, `WordSectionTool`.
