@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using WordMcp.ComInterop.Session;
 using WordMcp.Core.Commands.Document;
+using WordMcp.Core.Commands.Field;
+using WordMcp.Core.Commands.Image;
 using WordMcp.Core.Commands.Paragraph;
 using WordMcp.Core.Commands.Table;
 using WordMcp.Core.Commands.Text;
@@ -45,6 +47,12 @@ internal static class WordServices
 
     /// <summary>Gets the table command implementation.</summary>
     public static ITableCommands Tables { get; } = new TableCommands();
+
+    /// <summary>Gets the image command implementation.</summary>
+    public static IImageCommands Images { get; } = new ImageCommands();
+
+    /// <summary>Gets the field command implementation.</summary>
+    public static IFieldCommands Fields { get; } = new FieldCommands();
 
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.

@@ -233,7 +233,20 @@ internal sealed class WordBatch : IWordBatch
 
     private T WaitForCompletion<T>(Task<T> task, CancellationToken cancellationToken)
     {
-        if (!task.Wait(_operationTimeout, cancellationToken))
+        bool completed;
+
+        try
+        {
+            completed = task.Wait(_operationTimeout, cancellationToken);
+        }
+        catch (AggregateException)
+        {
+            // Wait wraps failures; GetResult below rethrows the original exception so callers see
+            // the actual COM or argument error instead of an AggregateException.
+            completed = true;
+        }
+
+        if (!completed)
         {
             throw new TimeoutException(
                 $"Word operation on '{Path.GetFileName(_documentPath)}' exceeded " +
@@ -379,28 +392,7 @@ internal sealed class WordBatch : IWordBatch
 
         Word.Document doc = OpenDocument(app, normalizedPath);
 
-        // Our hand-written package contains no styles, whereas a document created through Word
-        // inherits the built-in ones from Normal.dotm. Copy them in so callers can use names like
-        // "Heading 1" or "Table Grid".
-        CopyBuiltInStyles(app, doc);
-
         return doc;
-    }
-
-    private static void CopyBuiltInStyles(Word.Application app, Word.Document doc)
-    {
-        try
-        {
-            string template = (string)((dynamic)app).NormalTemplate.FullName;
-            ((dynamic)doc).CopyStylesFromTemplate(template);
-        }
-        catch (COMException)
-        {
-            // A document without the built-in styles is still usable; only named styles fail.
-        }
-        catch (Microsoft.CSharp.RuntimeBinder.RuntimeBinderException)
-        {
-        }
     }
 
     private static Word.Document OpenDocument(Word.Application app, string normalizedPath)

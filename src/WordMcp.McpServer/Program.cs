@@ -78,11 +78,14 @@ public static class Program
                     SESSION LIFECYCLE:
                     1. file(action:'open', path:'C:\\...\\report.docx') -> returns session_id
                        (or file(action:'create', path:...) for a new document)
-                    2. pass session_id to document / text / paragraph / table
+                    2. pass session_id to document / text / paragraph / table / image / field
                     3. file(action:'close', session_id:..., save:true) when completely done
 
-                    Paragraph and table indexes are 1-based and shift after structural edits;
-                    re-run paragraph(list) or table(list) before further edits.
+                    Paragraph, table and image indexes are 1-based and shift after structural
+                    edits; re-run paragraph(list), table(list) or image(list) before further edits.
+
+                    A table of contents only lists paragraphs that use a heading style, so apply
+                    'Heading 1'/'Heading 2' before calling field(insert-toc).
                     """;
             })
             .WithToolsFromAssembly()

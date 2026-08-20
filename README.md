@@ -85,7 +85,7 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 
 ## Tools
 
-Five tools, each with an `action` parameter.
+Seven tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -150,6 +150,27 @@ Paragraph indices are **1-based**, matching Word.
 | `export-pdf` | Export to PDF without touching the open document |
 | `save-as` | Save a copy in another format |
 
+### `image` — pictures
+
+| Action | Purpose |
+|---|---|
+| `list` | List inline images with index, size, alt text and link state |
+| `insert` | Insert a picture, optionally with `width`, `height`, `caption` and `alt_text` |
+| `resize` | Resize by `width`/`height` or by `scale_percent` |
+| `replace` | Swap the picture behind an index, keeping its size by default |
+| `delete` | Delete an image by index |
+| `set-alt-text` | Set the alternative text for accessibility |
+
+### `field` — fields and tables of contents
+
+| Action | Purpose |
+|---|---|
+| `list` | List all fields with index, type and field code |
+| `insert-toc` | Insert a table of contents (`upper_heading_level`, `lower_heading_level`) |
+| `update-toc` | Recalculate every table of contents |
+| `update-all` | Update all fields, including those in headers and footers |
+| `insert-page-number` | Add a page number to the header or footer |
+
 ---
 
 ## Responses
@@ -179,6 +200,11 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **Style names are English.** Built-in styles (`Heading 1`, `Title`, `Table Grid`, …) are translated to Word's language-independent style ids, so they work on localized installations. Any other name is passed to Word as-is, which is how custom and localized styles are addressed. Note that Word *reports* styles under their localized name (`Überschrift 1` on a German install).
 * **New documents are written directly, not via Word.** `file(create)` writes an empty `.docx`/`.docm` package itself and then opens it. Creating documents through Word instead is unreliable on machines signed in to Microsoft 365, because AutoSave claims the new document for OneDrive and silently ignores the requested local path.
 * **Merged table cells** are returned as empty strings by `table(read)`.
+* **Image sizes are in points, not pixels** (72 pt = 1 inch). `image(insert)` and `image(resize)` keep the aspect ratio unless `lock_aspect_ratio` is set to `false`, so passing only `width` scales the height along with it.
+* **`image` only covers inline pictures.** Floating shapes, text boxes and charts are left untouched and do not appear in `image(list)`, so their presence does not shift image indexes.
+* **A table of contents only lists heading paragraphs.** `field(insert-toc)` returns `entry_count: 0` for a document without heading styles — apply `Heading 1`/`Heading 2` via `paragraph(add|set-style)` first, then run `field(update-toc)`.
+* **`field(update-all)` also walks headers and footers.** Word's `Document.Fields` covers the body only, which is why page numbers would otherwise never refresh.
+* **`image(insert)` with a caption uses Word's caption numbering**, so the caption reads `Figure 1 <your text>` (localized on non-English installations) and participates in a table of figures.
 
 ---
 
@@ -197,7 +223,7 @@ dotnet test WordMcp.sln --filter "Category!=RequiresWord"
 |---|---|
 | `src/WordMcp.ComInterop` | Word COM lifecycle: STA threading, sessions, OLE message filter, file validation |
 | `src/WordMcp.Core` | Command implementations and result models |
-| `src/WordMcp.McpServer` | stdio MCP server exposing the five tools |
+| `src/WordMcp.McpServer` | stdio MCP server exposing the seven tools |
 | `tests/WordMcp.Core.Tests` | Unit tests plus integration tests against a real Word |
 | `tests/WordMcp.McpServer.Tests` | Tool-layer unit tests, no Word required |
 
