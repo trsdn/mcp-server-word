@@ -1,0 +1,36 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0-windows</TargetFramework>
+
+    <AssemblyName>WordMcp.Service</AssemblyName>
+    <RootNamespace>WordMcp.Service</RootNamespace>
+
+    <PackageId>WordMcp.Service</PackageId>
+    <Title>WordMcp Session Service</Title>
+    <Description>Holds Word sessions outside the MCP server process so several clients can share one open document. Provides the request/response protocol, per-user named pipe security and the session lifecycle.</Description>
+    <PackageTags>word;automation;mcp;session;service;named-pipes;windows</PackageTags>
+    <PackageRequireLicenseAcceptance>false</PackageRequireLicenseAcceptance>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="WordMcp.Service.Tests" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\WordMcp.ComInterop\WordMcp.ComInterop.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.CodeAnalysis.NetAnalyzers">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers</IncludeAssets>
+    </PackageReference>
+  </ItemGroup>
+
+</Project>

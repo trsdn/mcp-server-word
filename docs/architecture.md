@@ -1,6 +1,6 @@
 # Architecture
 
-Five projects, layered so that everything above the COM boundary is testable without Word running.
+Six projects, layered so that everything above the COM boundary is testable without Word running.
 
 ```
 MCP client (VS Code, Claude Desktop, Copilot CLI)
@@ -17,6 +17,11 @@ WordMcp.ComInterop         session manager, STA thread, Word COM objects
         ▼
 WINWORD.EXE
 ```
+
+`WordMcp.Service` sits beside the MCP server and wraps `SessionManager` behind a data-only
+request/response contract, so sessions can move out of the client's process. The MCP server does
+not route through it yet — that migration is tracked separately — but the layer is in place and
+tested.
 
 `WordMcp.Generators.Mcp` and `WordMcp.Generators.Shared` are build-time only; they ship no runtime
 code.
@@ -68,6 +73,36 @@ that turns any exception into a JSON error payload rather than a transport failu
 `WordFileTool` is the only hand-written tool, because session lifecycle does not fit the
 generator's shape. The other fourteen are generated.
 
+### WordMcp.Service
+
+Holds the sessions so they can outlive a single client. `WordMcpService` owns the
+`SessionManager` and exposes it only through one method:
+
+```
+ProcessAsync({ command, sessionId, args }) → { success, result, errorMessage, errorType }
+```
+
+Nothing in that contract is a COM object or a delegate, which is the whole point: the same
+service can be called in-process or across a named pipe and the caller cannot tell the
+difference. It is also the reason the boundary sits here and not at `IWordBatch` —
+`IWordBatch.Execute` takes a delegate and cannot cross a process.
+
+Three supporting pieces:
+
+- **`ServiceProtocol`** — newline-delimited JSON. One request per line in, one response per line
+  out. Serialization is compact, so a newline inside a value is escaped and never breaks framing.
+- **`ServiceSecurity`** — the pipe name embeds the caller's SID and the pipe carries an ACL for
+  that SID alone, so two users never meet. Clients pass `PipeOptions.CurrentUserOnly`, which makes
+  Windows verify the server's owner before any byte moves, closing the reverse direction too.
+- **`OrphanWordCleanup`** — terminates `WINWORD.EXE` processes *this service started* and that
+  outlived their session. Only tracked process ids are ever considered, and only if the process is
+  still named `WINWORD`, so a Word the user opened by hand is never at risk.
+
+Idle behaviour is a pure predicate (`IsIdle`) over an injectable `TimeProvider` rather than a
+timer, which keeps it testable without waiting. An open session always counts as active however
+long ago it was touched: closing Word underneath a client that still holds a session id turns a
+dormant workflow into a broken one.
+
 ## The generated tool layer
 
 A source generator reads the command interfaces and emits one MCP tool class per
@@ -116,6 +151,7 @@ which keeps a bad argument from looking like a broken server.
 |---|---|---|
 | `WordMcp.Core.Tests` | validation tests only | argument validation, conversions, and — with Word — the real COM behaviour |
 | `WordMcp.McpServer.Tests` | yes | that the generated tools match the interfaces |
+| `WordMcp.Service.Tests` | all but the lifecycle suite | protocol framing, pipe security, orphan cleanup, dispatch and idle rules; with Word, the session lifecycle |
 
 Tests that need Word carry `[Trait("Category", "RequiresWord")]`; CI runs
 `--filter "Category!=RequiresWord"` because GitHub runners have no Office. That makes the
