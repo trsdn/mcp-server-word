@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using WordMcp.ComInterop.Session;
 using WordMcp.Core.Commands.Document;
+using WordMcp.Core.Commands.Bookmark;
 using WordMcp.Core.Commands.Comment;
 using WordMcp.Core.Commands.Field;
 using WordMcp.Core.Commands.HeaderFooter;
@@ -77,6 +78,9 @@ internal static class WordServices
 
     /// <summary>Gets the revision command implementation.</summary>
     public static IRevisionCommands Revisions { get; } = new RevisionCommands();
+
+    /// <summary>Gets the bookmark command implementation.</summary>
+    public static IBookmarkCommands Bookmarks { get; } = new BookmarkCommands();
 
     /// <summary>
     /// Saves and closes every open session. Called on shutdown so unsaved work is not lost.
