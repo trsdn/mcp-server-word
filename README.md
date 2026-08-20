@@ -95,6 +95,22 @@ file(open|create) ──► session_id ──► text / paragraph / table / docu
 * The document must not be open in Word already — WordMcp needs exclusive access.
 * Word runs invisibly in the background and is terminated when the session closes.
 
+### The session service
+
+Sessions normally live inside the MCP server process and disappear with it. `WordMcp.Service.exe`
+is an optional background daemon that holds them instead, so a session survives a restarted client
+and can be shared by several of them:
+
+```
+WordMcp.Service.exe --daemon [--idle-minutes 30]   # listen until idle or stopped
+WordMcp.Service.exe --status                       # what is it doing?
+WordMcp.Service.exe --stop                         # save open documents and exit
+```
+
+Starting it by hand is rarely necessary — a client configured to use it starts it on demand. The
+pipe it listens on embeds your SID and is ACL'd to it, so sessions are never shared between
+accounts. It exits on its own once no session has been open for the idle timeout.
+
 ---
 
 ## Tools

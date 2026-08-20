@@ -103,6 +103,25 @@ timer, which keeps it testable without waiting. An open session always counts as
 long ago it was touched: closing Word underneath a client that still holds a session id turns a
 dormant workflow into a broken one.
 
+### The daemon
+
+`WordMcp.Service` is also an executable. `--daemon` runs `ServiceHost`, which accepts pipe
+connections and feeds each line to `WordMcpService`; `--status` and `--stop` are thin clients
+against a running one. `ServiceClient` is the other side, and starting it is the interesting part:
+
+- **A missing service is not an error.** `SendAsync` first tries to connect; if nothing answers and
+  auto-start is on, it spawns the daemon, waits for it to listen, and retries. Callers never have
+  to know whether a service was already running.
+- **One connection per request.** Locally that costs microseconds and buys reconnect for free: a
+  daemon that exited on its idle timeout is simply started again by the next call, with no stale
+  connection state to reason about.
+- **Single instance via a named mutex, not the pipe.** Windows happily allows several servers on
+  one pipe name, so two daemons would both appear to start and each client would see half the
+  sessions. `WordMcp-host-{pipeName}` settles it before the pipe is ever created.
+
+The accept loop parks in `WaitForConnectionAsync`, which no cancellation token can interrupt on
+Windows, so the watchdog that notices shutdown or idleness wakes it with a throwaway connection.
+
 ## The generated tool layer
 
 A source generator reads the command interfaces and emits one MCP tool class per
