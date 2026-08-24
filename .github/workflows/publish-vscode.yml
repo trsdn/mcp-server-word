@@ -1,0 +1,54 @@
+name: Publish VS Code extension
+
+# The extension can be shipped two ways. With a marketplace token in the VSCE_PAT secret this
+# workflow publishes on its own; without one it still builds the VSIX and attaches it as an
+# artifact, which is what the manual upload on marketplace.visualstudio.com/manage needs.
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: Publish to the marketplace instead of only building the VSIX
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: vscode-extension
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Read the version
+        id: meta
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Package
+        run: npx --yes @vscode/vsce@latest package --out "word-mcp-${{ steps.meta.outputs.version }}.vsix"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: word-mcp-vsix
+          path: vscode-extension/*.vsix
+          if-no-files-found: error
+
+      - name: Publish
+        if: inputs.publish
+        env:
+          VSCE_PAT: ${{ secrets.VSCE_PAT }}
+        run: |
+          if [ -z "$VSCE_PAT" ]; then
+            echo "::error::VSCE_PAT is not set. Either add the secret or download the word-mcp-vsix artifact and upload it at https://marketplace.visualstudio.com/manage."
+            exit 1
+          fi
+          npx --yes @vscode/vsce@latest publish --packagePath "word-mcp-${{ steps.meta.outputs.version }}.vsix"
