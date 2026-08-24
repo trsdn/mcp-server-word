@@ -116,13 +116,26 @@ git push origin v0.2.0
 ```
 
 That runs `.github/workflows/release.yml`: build, test, pack, verify the stamped `server.json`,
-push to nuget.org and open a GitHub release with generated notes. A tag containing a hyphen
-(`v0.2.0-rc.1`) is published as a prerelease.
+push to nuget.org, open a GitHub release with generated notes, and register the version with the
+MCP registry. A tag containing a hyphen (`v0.2.0-rc.1`) is published as a prerelease.
 
-Publishing needs a `NUGET_API_KEY` repository secret. Without it the push step fails and the
-release is not created — nothing half-published escapes. To rehearse the build without publishing,
-run the workflow manually from the Actions tab and pass a version; that path packs and uploads an
-artifact but never pushes.
+Neither publish step stores a credential. Both exchange the workflow's own OIDC token for a
+short-lived one, so there is nothing to rotate and nothing to leak — which also means a NuGet key
+cannot quietly expire between releases, as keys issued since 2026-08-17 do after thirty days.
+
+Two things are configured outside the repository and are easy to forget:
+
+* A **trusted publishing policy** on nuget.org naming owner `trsdn`, repository `mcp-server-word`
+  and workflow file `release.yml`. Without it the login step fails and nothing is published.
+* The **`NUGET_USER` repository variable**, which is the nuget.org account name.
+
+The registry step waits for nuget.org to index the new version first, because the registry
+downloads the package to find the `mcp-name` marker in its readme — that is how it verifies the
+package is yours. The marker lives at the top of `README.md`; moving or reformatting it breaks
+publishing, and the release workflow checks for it in the packed readme to say so early.
+
+To rehearse the build without publishing, run the workflow manually from the Actions tab and pass a
+version; that path packs and uploads an artifact but never pushes.
 
 ## Reporting bugs
 Use the [issue templates](https://github.com/trsdn/mcp-server-word/issues/new/choose). Include the
