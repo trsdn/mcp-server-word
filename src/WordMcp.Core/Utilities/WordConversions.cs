@@ -350,6 +350,56 @@ public static class WordConversions
         _ => "other"
     };
 
+    /// <summary>
+    /// Converts a <c>WdContentControlType</c> value to its friendly name.
+    /// </summary>
+    /// <param name="wdContentControlType">The Word content control type constant.</param>
+    /// <returns>The friendly content control type name.</returns>
+    public static string FromWdContentControlType(int wdContentControlType) => wdContentControlType switch
+    {
+        ComInteropConstants.WdContentControlRichText => "rich-text",
+        ComInteropConstants.WdContentControlText => "text",
+        ComInteropConstants.WdContentControlPicture => "picture",
+        ComInteropConstants.WdContentControlComboBox => "combo-box",
+        ComInteropConstants.WdContentControlDropdownList => "dropdown-list",
+        ComInteropConstants.WdContentControlBuildingBlockGallery => "building-block-gallery",
+        ComInteropConstants.WdContentControlDate => "date",
+        ComInteropConstants.WdContentControlGroup => "group",
+        ComInteropConstants.WdContentControlCheckBox => "checkbox",
+        ComInteropConstants.WdContentControlRepeatingSection => "repeating-section",
+        _ => "other"
+    };
+
+    /// <summary>
+    /// Converts a content control type name to the matching <c>WdContentControlType</c> value.
+    /// </summary>
+    /// <param name="contentControlType">One of the names returned by <see cref="FromWdContentControlType"/>.</param>
+    /// <returns>The Word content control type constant.</returns>
+    /// <exception cref="ArgumentException">The type name is unknown.</exception>
+    public static int ToWdContentControlType(string contentControlType)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(contentControlType);
+
+        return NormalizeName(contentControlType) switch
+        {
+            "rich-text" or "richtext" => ComInteropConstants.WdContentControlRichText,
+            "text" or "plain-text" or "plaintext" => ComInteropConstants.WdContentControlText,
+            "picture" or "image" => ComInteropConstants.WdContentControlPicture,
+            "combo-box" or "combobox" => ComInteropConstants.WdContentControlComboBox,
+            "dropdown-list" or "dropdownlist" or "dropdown" => ComInteropConstants.WdContentControlDropdownList,
+            "building-block-gallery" or "buildingblockgallery" => ComInteropConstants.WdContentControlBuildingBlockGallery,
+            "date" => ComInteropConstants.WdContentControlDate,
+            "group" => ComInteropConstants.WdContentControlGroup,
+            "checkbox" or "check-box" => ComInteropConstants.WdContentControlCheckBox,
+            "repeating-section" or "repeatingsection" => ComInteropConstants.WdContentControlRepeatingSection,
+            _ => throw new ArgumentException(
+                $"Unknown content control type '{contentControlType}'. Use one of: rich-text, text, "
+                + "picture, combo-box, dropdown-list, building-block-gallery, date, group, checkbox, "
+                + "repeating-section.",
+                nameof(contentControlType))
+        };
+    }
+
     private static string NormalizeName(string value)
         => value.Trim().ToLowerInvariant().Replace('_', '-').Replace(" ", string.Empty, StringComparison.Ordinal);
 }

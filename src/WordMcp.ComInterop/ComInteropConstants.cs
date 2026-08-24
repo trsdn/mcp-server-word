@@ -326,6 +326,40 @@ public static class ComInteropConstants
 
     #endregion
 
+    #region Content controls
+
+    /// <summary>WdContentControlType.wdContentControlRichText = 0.</summary>
+    public const int WdContentControlRichText = 0;
+
+    /// <summary>WdContentControlType.wdContentControlText = 1.</summary>
+    public const int WdContentControlText = 1;
+
+    /// <summary>WdContentControlType.wdContentControlPicture = 2.</summary>
+    public const int WdContentControlPicture = 2;
+
+    /// <summary>WdContentControlType.wdContentControlComboBox = 3.</summary>
+    public const int WdContentControlComboBox = 3;
+
+    /// <summary>WdContentControlType.wdContentControlDropdownList = 4.</summary>
+    public const int WdContentControlDropdownList = 4;
+
+    /// <summary>WdContentControlType.wdContentControlBuildingBlockGallery = 5.</summary>
+    public const int WdContentControlBuildingBlockGallery = 5;
+
+    /// <summary>WdContentControlType.wdContentControlDate = 6.</summary>
+    public const int WdContentControlDate = 6;
+
+    /// <summary>WdContentControlType.wdContentControlGroup = 7.</summary>
+    public const int WdContentControlGroup = 7;
+
+    /// <summary>WdContentControlType.wdContentControlCheckBox = 8.</summary>
+    public const int WdContentControlCheckBox = 8;
+
+    /// <summary>WdContentControlType.wdContentControlRepeatingSection = 9.</summary>
+    public const int WdContentControlRepeatingSection = 9;
+
+    #endregion
+
     #region Supported extensions
 
     /// <summary>

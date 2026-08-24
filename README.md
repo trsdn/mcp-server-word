@@ -137,7 +137,7 @@ itself, which is what a single client wants: no second process and no startup wa
 
 ## Tools
 
-Fifteen tools, each with an `action` parameter.
+Seventeen tools, each with an `action` parameter.
 
 ### `file` — session lifecycle
 
@@ -341,6 +341,56 @@ bookmark(action: "get-text", session_id: "...", name: "Intro")
 
 ---
 
+### `footnote` — footnotes and endnotes
+
+| Action | Purpose |
+|---|---|
+| `list` | Footnotes or endnotes with index, reference mark, paragraph and text |
+| `add` | Attach a note to a paragraph, or to a phrase inside it |
+| `set-text` | Rewrite the text of a note |
+| `delete` | Remove a note together with its reference mark |
+
+`kind` selects `footnote` (default) or `endnote`; the two are separate collections in Word with
+independent numbering. This is the only way to reach footnote text at all — `text(get)` returns the
+body story and never the notes.
+
+```jsonc
+footnote(action: "list", session_id: "...")
+footnote(action: "add", session_id: "...", paragraph_index: 4,
+         text: "Annual report 2025, p. 14.", anchor_text: "fifteen percent")
+footnote(action: "add", session_id: "...", paragraph_index: 4,
+         text: "Method described in appendix B.", kind: "endnote")
+```
+
+---
+
+### `content-control` — template fields
+
+| Action | Purpose |
+|---|---|
+| `list` | Content controls with tag, title, type, lock state and current text |
+| `get` | Read the controls addressed by `tag` or `id` |
+| `set-text` | Fill them; `is_checked` for checkbox controls |
+| `add` | Wrap a paragraph in a new control |
+| `delete` | Remove controls, optionally with their contents |
+
+Content controls are the structured fields a Word template exposes. Filling them is the reliable way
+to complete a template — `text(replace)` on the surrounding text destroys the control and its
+binding. `tag` is not unique and updates every match, which is what a template repeating a field
+expects; `id` addresses exactly one control.
+
+```jsonc
+content-control(action: "list", session_id: "...")
+content-control(action: "set-text", session_id: "...",
+                tag: "CustomerName", text: "Contoso Ltd")
+content-control(action: "set-text", session_id: "...",
+                tag: "TermsAccepted", is_checked: true)
+content-control(action: "delete", session_id: "...", tag: "Draft",
+                delete_contents: true)
+```
+
+---
+
 ### `screenshot` — see the page
 
 | Action | Purpose |
@@ -408,6 +458,12 @@ Every tool returns JSON. Failures are reported as structured payloads, never as 
 * **Bookmark names are restricted by Word.** They must start with a letter, may contain only letters, digits and underscores, and are limited to 40 characters. Spaces, hyphens, dots and non-ASCII letters are rejected before the call reaches Word, which would otherwise fail with a generic COM error.
 * **Bookmarks are the stable way to refer to a passage.** Paragraph indexes shift with every insertion, bookmarks do not. Bookmark a passage once and use `bookmark(get-text)` to re-read it later.
 * **`bookmark(add)` on a paragraph excludes the paragraph mark**, so `get-text` returns the text without a trailing newline. A bookmark over several paragraphs keeps the marks in between.
+* **`text(get)` never returns footnotes.** Footnotes and endnotes live in their own Word story, so a document that carries its sources in notes looks complete while a part of its content is missing. Call `footnote(list)` before summarizing or translating anything.
+* **Deleting a note renumbers the rest.** `footnote(delete)` shifts every following index down, the same trap as with comments and revisions. When removing several notes, work from the highest index downwards.
+* **Footnotes and endnotes are separate collections.** They have independent numbering, and every `footnote` action defaults to footnotes — pass `kind: "endnote"` explicitly.
+* **Filling a template means `content-control(set-text)`, not `text(replace)`.** Replacing the text around a content control destroys the control and its data binding; writing through the control keeps both.
+* **Content control tags are not unique.** `content-control(set-text)` by `tag` updates every match and reports how many, because a template that shows the customer name in the header and again in the signature block relies on exactly that. Use `id` when precisely one control is meant.
+* **`content-control(delete)` keeps the text by default.** Only `delete_contents: true` removes the content along with the control. Controls locked against deletion are reported instead of silently skipped.
 * **`screenshot(page)` renders through a PDF.** Word has no API that returns a page as an image, so the server exports the single page with `ExportAsFixedFormat` and rasterizes it. Unsaved changes are included, and the temporary PDF is deleted afterwards.
 * **Page numbers come from a fresh repagination.** A document that was only ever edited through automation reports a stale page count, so `screenshot` repaginates first. That also means the page count reflects the current layout, not the one at open time.
 

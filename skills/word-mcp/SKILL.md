@@ -3,15 +3,15 @@ name: word-mcp
 description: >
   Automate Microsoft Word on Windows through the WordMcp MCP server. Use when creating, reading,
   or editing Word documents: text, paragraphs, tables, images, styles, lists, sections, headers
-  and footers, fields and tables of contents, comments, tracked changes and bookmarks. Can render
-  a page as an image to check layout.
-  Triggers: Word, document, docx, report, letter, memo, table of contents, tracked changes,
-  comments, bookmarks, headers, footers.
+  and footers, fields and tables of contents, comments, tracked changes, bookmarks, footnotes and
+  content controls. Can render a page as an image to check layout.
+  Triggers: Word, document, docx, report, letter, memo, template, table of contents, tracked
+  changes, comments, bookmarks, footnotes, endnotes, content controls, headers, footers.
 ---
 
 # Word MCP Server Skill
 
-Fifteen tools, each taking an `action` parameter. The tool descriptions are complete; this file
+Seventeen tools, each taking an `action` parameter. The tool descriptions are complete; this file
 covers the workflow, the ordering rules that are not obvious, and the places where Word behaves
 in a way nobody would guess.
 
@@ -112,6 +112,9 @@ just fills the context window.
 - `field(update-all)` and `revision(accept|reject)` without an index deliberately walk headers and
   footers too; Word's own document-wide calls cover the body only.
 - `image` covers inline pictures only. Text boxes, floating shapes and charts are invisible to it.
+- `text(get)` returns the body story only — **footnotes and endnotes are never in it**. A document
+  that carries its sources in notes looks complete while it is not. Run `footnote(list)` before
+  summarizing or translating.
 - Headers are inherited between sections until something is written to them. `header-footer(set)`
   with a `section_index` breaks that link for you.
 - `first-page` and `even-pages` headers only render once the section switch is on, which
@@ -124,6 +127,13 @@ just fills the context window.
 - `comment(resolve)` usually fails on Microsoft 365: comments added through the API are unposted
   drafts and a draft cannot be marked done. Delete the comment instead.
 - `table(read)` returns merged cells as empty strings.
+- Filling a template means `content-control(set-text)`, never `text(replace)` — replacing the text
+  around a content control destroys the control and its binding. `content-control(list)` first, the
+  tags are what you address. A tag may occur several times on purpose and `set-text` fills every
+  match; use `id` when exactly one is meant.
+- `footnote(delete)` renumbers the notes after it, like comments and revisions. Delete from the
+  back. Footnotes and endnotes are separate collections with independent numbering; every action
+  defaults to `kind: "footnote"`.
 - Bookmark names must start with a letter and contain only letters, digits and underscores.
 - Styles are addressed in English (`Heading 1`) but Word reports them localized. `style(list)`
   returns both `name` and `english_name` — send `english_name` back when it is there.
