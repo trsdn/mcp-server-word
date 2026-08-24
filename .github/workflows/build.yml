@@ -74,3 +74,38 @@ jobs:
         with:
           name: nuget-package
           path: ${{ github.workspace }}/artifacts/*.nupkg
+
+      # Packing proves the package builds, not that it works. A broken tool entry point,
+      # a renamed command or a file missing from the package only surfaces on install,
+      # and no unit test covers that.
+      - name: Install the packed tool
+        shell: pwsh
+        run: |
+          # Restricted to the local folder, so this cannot quietly install a same-numbered
+          # build from nuget.org instead of the one just packed.
+          $config = Join-Path "${{ runner.temp }}" 'local-only.config'
+          @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <configuration>
+            <packageSources>
+              <clear />
+              <add key="local" value="${{ github.workspace }}/artifacts" />
+            </packageSources>
+          </configuration>
+          "@ | Set-Content -Path $config -Encoding UTF8
+
+          dotnet tool install WordMcp.McpServer `
+            --tool-path "${{ github.workspace }}/toolcheck" `
+            --configfile $config
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # The runner has no Word, so the handshake is the deepest check possible here:
+      # it starts the server and lists the tools without touching a document.
+      - name: Smoke test the packed tool
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/toolcheck/mcp-word.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw "mcp-word --version failed." }
+
+          pwsh -NoProfile -File .github/smoke-test.ps1 -Command "${{ github.workspace }}/toolcheck/mcp-word.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

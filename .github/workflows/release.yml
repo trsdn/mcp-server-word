@@ -22,6 +22,10 @@ jobs:
     name: Build, test and publish
     runs-on: windows-latest
 
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      publish: ${{ steps.version.outputs.publish }}
+
     permissions:
       contents: write
       # Trusted publishing exchanges this token for a short-lived NuGet key.
@@ -243,3 +247,14 @@ jobs:
 
           ./mcp-publisher.exe publish $manifest
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+  # Everything above tests the source tree and pushes an artefact. This installs that
+  # artefact back from nuget.org the way a user would, which is the only step that can
+  # tell whether the release is actually usable.
+  verify:
+    name: Verify the published package
+    needs: release
+    if: needs.release.outputs.publish == 'true'
+    uses: ./.github/workflows/verify-package.yml
+    with:
+      version: ${{ needs.release.outputs.version }}
