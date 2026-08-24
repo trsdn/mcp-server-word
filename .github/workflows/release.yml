@@ -157,11 +157,19 @@ jobs:
             throw "Trusted publishing returned no key. Check the NUGET_USER repository variable and the trusted publishing policy on nuget.org."
           }
 
-          dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" `
-            --source https://api.nuget.org/v3/index.json `
-            --api-key $env:NUGET_API_KEY `
-            --skip-duplicate
-          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          # `dotnet nuget push` does not expand the wildcard in a mixed-separator path such as
+          # `D:\a\repo\repo/artifacts/*.nupkg`; it reports "File does not exist". Resolving the
+          # package here keeps the push independent of that behaviour.
+          $packages = @(Get-ChildItem "${{ github.workspace }}/artifacts/*.nupkg")
+          if ($packages.Count -eq 0) { throw "No package found in ${{ github.workspace }}/artifacts." }
+
+          foreach ($package in $packages) {
+            dotnet nuget push $package.FullName `
+              --source https://api.nuget.org/v3/index.json `
+              --api-key $env:NUGET_API_KEY `
+              --skip-duplicate
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
 
       - name: Create GitHub release
         if: steps.version.outputs.publish == 'true'
