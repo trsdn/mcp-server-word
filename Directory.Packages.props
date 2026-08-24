@@ -18,7 +18,7 @@
     <PackageVersion Include="Microsoft.Extensions.Configuration" Version="9.0.4" />
     <PackageVersion Include="Microsoft.Extensions.DependencyInjection" Version="9.0.4" />
     <!-- MCP SDK -->
-    <PackageVersion Include="ModelContextProtocol" Version="0.9.0-preview.2" />
+    <PackageVersion Include="ModelContextProtocol" Version="2.2.0" />
     <!-- Testing Framework -->
     <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
