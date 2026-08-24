@@ -40,12 +40,13 @@
 
   <!-- The MCP registry rejects a server.json whose version disagrees with the package version, so
        the checked-in file is treated as a template and the version is stamped in at build time
-       from $(Version). Both occurrences are replaced: the server version and the package version. -->
+       from $(Version). Both occurrences are replaced: the server version and the package version.
+       The target is deliberately not incremental: its real input is $(Version), not the template,
+       so a file timestamp comparison would happily leave yesterday's version in place. Writing is
+       still conditional, so an unchanged version does not touch the file. -->
   <Target Name="_StampMcpServerJsonVersion"
           BeforeTargets="AssignTargetPaths;GenerateNuspec"
-          Condition="Exists('$(MSBuildProjectDirectory)\.mcp\server.json')"
-          Inputs="$(MSBuildProjectDirectory)\.mcp\server.json"
-          Outputs="$(BaseIntermediateOutputPath)mcp\server.json">
+          Condition="Exists('$(MSBuildProjectDirectory)\.mcp\server.json')">
     <PropertyGroup>
       <_McpServerJsonText>$([System.IO.File]::ReadAllText('$(MSBuildProjectDirectory)\.mcp\server.json'))</_McpServerJsonText>
       <_McpServerJsonText>$([System.Text.RegularExpressions.Regex]::Replace($(_McpServerJsonText), '"version": "[^"]*"', '"version": "$(Version)"'))</_McpServerJsonText>
