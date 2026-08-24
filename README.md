@@ -43,6 +43,22 @@ dotnet pack src\WordMcp.McpServer\WordMcp.McpServer.csproj -c Release -o artifac
 dotnet tool install --global --add-source .\artifacts WordMcp.McpServer
 ```
 
+### Without installing
+
+The server is listed in the [MCP registry](https://registry.modelcontextprotocol.io/v0/servers?search=mcp-server-word) as `io.github.trsdn/mcp-server-word`. Clients that resolve packages themselves can run it through `dnx`, which fetches the version on demand instead of keeping a global tool around:
+
+```json
+{
+  "servers": {
+    "word": {
+      "type": "stdio",
+      "command": "dnx",
+      "args": ["WordMcp.McpServer@0.1.0", "--yes"]
+    }
+  }
+}
+```
+
 ## Client configuration
 
 The server speaks **stdio**.
