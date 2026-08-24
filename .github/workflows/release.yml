@@ -181,3 +181,57 @@ jobs:
 
           gh @arguments
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+      # The registry downloads the package to check the mcp-name marker in its readme, so it has
+      # to wait for nuget.org to finish indexing - which takes minutes, not seconds, after a push.
+      - name: Wait for nuget.org to index the package
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          $version = '${{ steps.version.outputs.version }}'
+          $url = 'https://api.nuget.org/v3-flatcontainer/wordmcp.mcpserver/index.json'
+
+          foreach ($attempt in 1..30) {
+            try {
+              $versions = (Invoke-RestMethod $url -TimeoutSec 30).versions
+              if ($versions -contains $version) {
+                Write-Host "$version is indexed."
+                exit 0
+              }
+              Write-Host "Attempt ${attempt}: $version is not indexed yet."
+            } catch {
+              Write-Host "Attempt ${attempt}: the package is not listed yet."
+            }
+            Start-Sleep -Seconds 20
+          }
+
+          throw "nuget.org did not index $version within ten minutes, so the registry would reject it."
+
+      - name: Install mcp-publisher
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          # Always the latest: an outdated publisher fails against the registry with 'invalid audience'.
+          $release = Invoke-RestMethod 'https://api.github.com/repos/modelcontextprotocol/registry/releases/latest'
+          $asset = $release.assets | Where-Object { $_.name -eq 'mcp-publisher_windows_amd64.tar.gz' }
+          if (-not $asset) { throw "The release $($release.tag_name) has no Windows build of mcp-publisher." }
+
+          Invoke-WebRequest $asset.browser_download_url -OutFile mcp-publisher.tar.gz
+          tar -xzf mcp-publisher.tar.gz mcp-publisher.exe
+          ./mcp-publisher.exe --version
+
+      # OIDC again, so nothing durable is stored for the registry either. The namespace
+      # io.github.trsdn is granted because the workflow runs in a repository owned by trsdn.
+      - name: Publish to the MCP registry
+        if: steps.version.outputs.publish == 'true'
+        shell: pwsh
+        run: |
+          # The checked-in manifest is a template; this is the copy stamped with the real version,
+          # and the same one that went into the package.
+          $manifest = 'src/WordMcp.McpServer/obj/mcp/server.json'
+
+          ./mcp-publisher.exe login github-oidc
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
+          ./mcp-publisher.exe publish $manifest
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
