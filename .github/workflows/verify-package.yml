@@ -1,0 +1,74 @@
+name: Verify published package
+
+# Installs WordMcp.McpServer from nuget.org exactly as a user would and drives an MCP
+# handshake against it. Everything else in CI tests the source tree; this is the only
+# check that the artefact people actually download is installable and starts.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to verify, without the leading v (e.g. 0.1.0). Empty means the latest release."
+        required: false
+        type: string
+  workflow_call:
+    inputs:
+      version:
+        description: "Version to verify, without the leading v."
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Install from nuget.org and start
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v6
+        with:
+          global-json-file: global.json
+
+      # nuget.org needs a moment after a push before the version resolves, so this is
+      # retried rather than failed on the first miss.
+      - name: Install from nuget.org
+        shell: pwsh
+        run: |
+          $version = '${{ inputs.version }}'
+
+          $arguments = @(
+            'tool', 'install', 'WordMcp.McpServer',
+            '--tool-path', "${{ github.workspace }}/toolcheck",
+            '--source', 'https://api.nuget.org/v3/index.json'
+          )
+          if ($version) { $arguments += @('--version', $version) }
+
+          $attempts = 20
+          for ($i = 1; $i -le $attempts; $i++) {
+            dotnet @arguments
+            if ($LASTEXITCODE -eq 0) { break }
+
+            if ($i -eq $attempts) { throw "Could not install WordMcp.McpServer $version from nuget.org." }
+            Write-Host "Attempt $i failed, retrying in 20s."
+            Start-Sleep -Seconds 20
+          }
+
+      - name: Report the installed version
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/toolcheck/mcp-word.exe" --version
+          if ($LASTEXITCODE -ne 0) { throw "mcp-word --version failed." }
+
+      # The runner has no Word, so the handshake is the deepest check possible here:
+      # it starts the server and lists the tools without touching a document.
+      - name: MCP handshake
+        shell: pwsh
+        run: |
+          pwsh -NoProfile -File .github/smoke-test.ps1 -Command "${{ github.workspace }}/toolcheck/mcp-word.exe"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

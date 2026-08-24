@@ -8,6 +8,9 @@
 artifacts/
 dist/
 
+# Scratch install target used by the CI smoke test.
+toolcheck/
+
 # Visual Studio / Rider / VS Code
 .vs/
 .idea/

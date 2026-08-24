@@ -137,6 +137,12 @@ publishing, and the release workflow checks for it in the packed readme to say s
 To rehearse the build without publishing, run the workflow manually from the Actions tab and pass a
 version; that path packs and uploads an artifact but never pushes.
 
+Once the push has gone through, a final job installs the package from nuget.org the way a user
+would and drives an MCP handshake against it. Everything before it tests the source tree, so this
+is the only step that can tell whether the artefact people actually download starts at all. The
+same check runs on every pull request against the freshly packed file, and it can be pointed at any
+released version from the Actions tab through **Verify published package**.
+
 ## Reporting bugs
 Use the [issue templates](https://github.com/trsdn/mcp-server-word/issues/new/choose). Include the
 Word build number and UI language; localization is behind a surprising share of the bugs here.
