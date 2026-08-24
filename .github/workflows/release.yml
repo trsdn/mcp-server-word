@@ -24,6 +24,8 @@ jobs:
 
     permissions:
       contents: write
+      # Trusted publishing exchanges this token for a short-lived NuGet key.
+      id-token: write
 
     steps:
       - name: Checkout
@@ -135,14 +137,24 @@ jobs:
           name: nuget-package
           path: ${{ github.workspace }}/artifacts/*.nupkg
 
+      # Trusted publishing over OIDC rather than a stored key: NuGet keys issued from
+      # 2026-08-17 expire after 30 days, so a secret here would quietly rot between releases.
+      # The policy on nuget.org names this repository and this workflow file.
+      - name: Log in to NuGet
+        id: nuget-login
+        if: steps.version.outputs.publish == 'true'
+        uses: NuGet/login@v1
+        with:
+          user: ${{ vars.NUGET_USER }}
+
       - name: Push to NuGet
         if: steps.version.outputs.publish == 'true'
         shell: pwsh
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         run: |
           if (-not $env:NUGET_API_KEY) {
-            throw "The NUGET_API_KEY repository secret is not set, so this release cannot be published."
+            throw "Trusted publishing returned no key. Check the NUGET_USER repository variable and the trusted publishing policy on nuget.org."
           }
 
           dotnet nuget push "${{ github.workspace }}/artifacts/*.nupkg" `
