@@ -1,0 +1,67 @@
+{
+  "name": "word-mcp",
+  "displayName": "Word MCP Server",
+  "description": "Automate Microsoft Word from chat: read, write and format documents, tables, images, footnotes and templates through 17 MCP tools.",
+  "version": "0.1.0",
+  "publisher": "trsdn",
+  "license": "MIT",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.101.0"
+  },
+  "categories": [
+    "AI",
+    "Chat",
+    "Other"
+  ],
+  "keywords": [
+    "mcp",
+    "word",
+    "docx",
+    "office",
+    "automation"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/trsdn/mcp-server-word.git"
+  },
+  "bugs": {
+    "url": "https://github.com/trsdn/mcp-server-word/issues"
+  },
+  "homepage": "https://github.com/trsdn/mcp-server-word#readme",
+  "main": "./extension.js",
+  "activationEvents": [
+    "onMcpCollection:word-mcp"
+  ],
+  "contributes": {
+    "mcpServerDefinitionProviders": [
+      {
+        "id": "word-mcp",
+        "label": "Word MCP Server"
+      }
+    ],
+    "configuration": {
+      "title": "Word MCP Server",
+      "properties": {
+        "wordMcp.serverVersion": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "Version of the `WordMcp.McpServer` NuGet package to run. Empty means the latest release."
+        },
+        "wordMcp.serviceMode": {
+          "type": "string",
+          "enum": [
+            "inline",
+            "daemon"
+          ],
+          "default": "inline",
+          "markdownEnumDescriptions": [
+            "Sessions live in the server process and end with it.",
+            "Sessions live in a background daemon and survive a restarted client."
+          ],
+          "description": "Where Word sessions are kept."
+        }
+      }
+    }
+  }
+}

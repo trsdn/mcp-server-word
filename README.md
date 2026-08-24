@@ -18,6 +18,24 @@ An [MCP](https://modelcontextprotocol.io) server that lets AI assistants drive *
 
 ## Installation
 
+### VS Code
+
+A thin extension in [`vscode-extension/`](vscode-extension) registers the server with VS Code, so
+there is nothing to configure by hand. It does not bundle the server; it launches it through `dnx`,
+which means the server updates without a new extension release.
+
+Build and install it from a checkout:
+
+```powershell
+cd vscode-extension
+npx @vscode/vsce package
+code --install-extension word-mcp-0.1.0.vsix
+```
+
+Then run **MCP: List Servers** from the Command Palette and start **Word**.
+
+### As a .NET tool
+
 ```powershell
 dotnet tool install --global WordMcp.McpServer
 ```

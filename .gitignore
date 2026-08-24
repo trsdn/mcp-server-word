@@ -49,3 +49,6 @@ Thumbs.db
 
 # Worktrees
 .worktrees/
+
+# VS Code extension packages
+*.vsix
