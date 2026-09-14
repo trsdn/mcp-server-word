@@ -20,7 +20,7 @@
     <!-- MCP SDK -->
     <PackageVersion Include="ModelContextProtocol" Version="0.9.0-preview.2" />
     <!-- Testing Framework -->
-    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.9.0" />
+    <PackageVersion Include="Microsoft.NET.Test.Sdk" Version="18.10.0" />
     <PackageVersion Include="xunit" Version="2.9.3" />
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
