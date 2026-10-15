@@ -36,7 +36,7 @@ jobs:
       - name: Package
         run: npx --yes @vscode/vsce@latest package --out "word-mcp-${{ steps.meta.outputs.version }}.vsix"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: word-mcp-vsix
           path: vscode-extension/*.vsix
