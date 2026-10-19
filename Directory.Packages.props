@@ -25,7 +25,7 @@
     <PackageVersion Include="xunit.runner.visualstudio" Version="4.0.0" />
     <PackageVersion Include="coverlet.collector" Version="10.0.1" />
     <!-- Code Analysis -->
-    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.400" />
+    <PackageVersion Include="Microsoft.CodeAnalysis.NetAnalyzers" Version="10.0.402" />
     <!-- Source Generators: pinned to the Roslyn version the .NET 9 SDK ships -->
     <PackageVersion Include="Microsoft.CodeAnalysis.CSharp" Version="4.12.0" />
     <PackageVersion Include="Microsoft.CodeAnalysis.Analyzers" Version="3.11.0" />
